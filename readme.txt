@@ -8,7 +8,7 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Pin-point client feedback on any page with screenshots and a clean admin dashboard. Optional AI suggestions and 1-click Apply for Elementor widgets.
+Pin-point client feedback on any page with screenshots. Optional AI suggestions and 1-click Apply for Elementor widgets.
 
 == Description ==
 
