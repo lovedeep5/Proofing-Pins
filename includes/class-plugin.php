@@ -14,7 +14,8 @@ class Plugin {
 	}
 
 	public function boot(): void {
-		add_action( 'init', [ $this, 'load_textdomain' ] );
+		// Translations are auto-loaded by WordPress 4.6+ for plugins hosted on
+		// WordPress.org — no load_plugin_textdomain() call needed.
 		( new CPT() )->register();
 		( new Capabilities() )->register();
 		( new Rest_API() )->register();
@@ -23,13 +24,5 @@ class Plugin {
 		if ( is_admin() ) {
 			( new Admin() )->register();
 		}
-	}
-
-	public function load_textdomain(): void {
-		load_plugin_textdomain(
-			'proofing-pins',
-			false,
-			dirname( plugin_basename( PP_PLUGIN_FILE ) ) . '/languages'
-		);
 	}
 }

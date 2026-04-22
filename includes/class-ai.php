@@ -15,8 +15,8 @@ class AI {
 	}
 
 	public function register(): void {
-		add_action( 'pp_pin_created', [ $this, 'on_pin_created' ], 10, 1 );
-		add_action( self::CRON_HOOK, [ $this, 'run_cron_job' ], 10, 1 );
+		add_action( 'proofingpins_pin_created', array( $this, 'on_pin_created' ), 10, 1 );
+		add_action( self::CRON_HOOK, array( $this, 'run_cron_job' ), 10, 1 );
 	}
 
 	// ---------- settings helpers ----------
@@ -224,61 +224,50 @@ class AI {
 
 		$elementor_block = '';
 		if ( $widget_type && $widget_id ) {
-			$elementor_block = <<<ELEM
-
-This element is inside an Elementor widget: widget_type="{$widget_type}", widget_id="{$widget_id}".
-
-When this is the case, PREFER Elementor UI instructions over CSS. Phrase suggestion like:
-"In the Elementor editor, open this widget and go to Style → Typography → Color. Set the color to #F97316."
-
-Additionally, when the change is one of the allowlisted operations below AND your confidence is high, INCLUDE a `change_op` object in the JSON that our plugin can apply directly:
-
-Allowlist (widget_type → setting_key → value_type):
-- heading       → title                (text)
-- heading       → title_color          (color)
-- button        → text                 (text)
-- button        → background_color     (color)
-- button        → button_text_color    (color)
-- text-editor   → editor               (html — plain text preferred)
-- text-editor   → text_color           (color)
-
-change_op shape:
-{
-  "op": "update_widget_setting",
-  "widget_type": "heading",
-  "widget_id": "{$widget_id}",
-  "setting_key": "title",
-  "setting_label": "Heading text",
-  "new_value": "New text"
-}
-
-ONLY include change_op when the intended fix maps cleanly to one allowlisted operation. Otherwise omit it.
-ELEM;
+			$elementor_block = "\n\n"
+				. 'This element is inside an Elementor widget: widget_type="' . $widget_type . '", widget_id="' . $widget_id . '".' . "\n\n"
+				. "When this is the case, PREFER Elementor UI instructions over CSS. Phrase suggestion like:\n"
+				. '"In the Elementor editor, open this widget and go to Style > Typography > Color. Set the color to #F97316."' . "\n\n"
+				. "Additionally, when the change is one of the allowlisted operations below AND your confidence is high, INCLUDE a `change_op` object in the JSON that our plugin can apply directly:\n\n"
+				. "Allowlist (widget_type -> setting_key -> value_type):\n"
+				. "- heading       -> title                (text)\n"
+				. "- heading       -> title_color          (color)\n"
+				. "- button        -> text                 (text)\n"
+				. "- button        -> background_color     (color)\n"
+				. "- button        -> button_text_color    (color)\n"
+				. "- text-editor   -> editor               (html - plain text preferred)\n"
+				. "- text-editor   -> text_color           (color)\n\n"
+				. "change_op shape:\n"
+				. "{\n"
+				. '  "op": "update_widget_setting",' . "\n"
+				. '  "widget_type": "heading",' . "\n"
+				. '  "widget_id": "' . $widget_id . '",' . "\n"
+				. '  "setting_key": "title",' . "\n"
+				. '  "setting_label": "Heading text",' . "\n"
+				. '  "new_value": "New text"' . "\n"
+				. "}\n\n"
+				. 'ONLY include change_op when the intended fix maps cleanly to one allowlisted operation. Otherwise omit it.';
 		}
 
-		$system = <<<SYS
-You are a senior web developer assistant reviewing client feedback on a live website. Given a reviewer's comment and the exact HTML element they clicked on, you propose a concrete, safe change a developer can implement.
-
-Respond with VALID JSON ONLY (no markdown fences) in this shape:
-{
-  "category": "text_change" | "css_tweak" | "content_swap" | "image_change" | "link_change" | "layout" | "bug" | "unclear" | "other",
-  "confidence": 0-100,
-  "summary": "One sentence describing what the reviewer wants in plain English.",
-  "suggestion": "Concrete, actionable recommendation — what to change and where.",
-  "snippet": "Optional: exact CSS rule, text diff, or code fragment a developer can copy. Empty string if not applicable.",
-  "snippet_language": "css" | "html" | "text" | "",
-  "risk": "low" | "medium" | "high",
-  "notes": "Optional caveats (e.g., affects other pages, may need design review).",
-  "change_op": { ...optional, see Elementor rules below... }
-}
-
-Rules:
-- If the comment is vague, set category="unclear" and write a summary asking for specifics.
-- Prefer scoped CSS (use the provided selector) over global changes.
-- Keep snippet under 400 characters.
-- Never invent element content — only suggest based on what's visible in the provided HTML.
-{$elementor_block}
-SYS;
+		$system  = "You are a senior web developer assistant reviewing client feedback on a live website. Given a reviewer's comment and the exact HTML element they clicked on, you propose a concrete, safe change a developer can implement.\n\n";
+		$system .= "Respond with VALID JSON ONLY (no markdown fences) in this shape:\n";
+		$system .= "{\n";
+		$system .= '  "category": "text_change" | "css_tweak" | "content_swap" | "image_change" | "link_change" | "layout" | "bug" | "unclear" | "other",' . "\n";
+		$system .= '  "confidence": 0-100,' . "\n";
+		$system .= '  "summary": "One sentence describing what the reviewer wants in plain English.",' . "\n";
+		$system .= '  "suggestion": "Concrete, actionable recommendation - what to change and where.",' . "\n";
+		$system .= '  "snippet": "Optional: exact CSS rule, text diff, or code fragment a developer can copy. Empty string if not applicable.",' . "\n";
+		$system .= '  "snippet_language": "css" | "html" | "text" | "",' . "\n";
+		$system .= '  "risk": "low" | "medium" | "high",' . "\n";
+		$system .= '  "notes": "Optional caveats (e.g., affects other pages, may need design review).",' . "\n";
+		$system .= '  "change_op": { ...optional, see Elementor rules below... }' . "\n";
+		$system .= "}\n\n";
+		$system .= "Rules:\n";
+		$system .= '- If the comment is vague, set category="unclear" and write a summary asking for specifics.' . "\n";
+		$system .= "- Prefer scoped CSS (use the provided selector) over global changes.\n";
+		$system .= "- Keep snippet under 400 characters.\n";
+		$system .= "- Never invent element content - only suggest based on what's visible in the provided HTML.";
+		$system .= $elementor_block;
 
 		$user = sprintf(
 			"Reviewer's comment:\n%s\n\nContext:\n- Page: %s (%s)\n- Viewport: %s\n- Clicked element tag: <%s>\n- CSS selector: %s\n- Element HTML (truncated):\n%s\n",

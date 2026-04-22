@@ -98,8 +98,14 @@ class Admin {
 		if ( strpos( (string) $hook, 'proofing-pins' ) === false ) {
 			return;
 		}
-		wp_enqueue_style( 'pp-admin', PP_PLUGIN_URL . 'assets/css/admin.css', [], PP_VERSION );
-		wp_enqueue_script( 'pp-admin', PP_PLUGIN_URL . 'assets/js/admin-dashboard.js', [], PP_VERSION, true );
+		wp_enqueue_style( 'pp-admin', PP_PLUGIN_URL . 'assets/css/admin.css', array(), PP_VERSION );
+		wp_enqueue_script(
+			'pp-admin',
+			PP_PLUGIN_URL . 'assets/js/admin-dashboard.js',
+			array(),
+			PP_VERSION,
+			array( 'in_footer' => true, 'strategy' => 'defer' )
+		);
 		wp_localize_script( 'pp-admin', 'PP_ADMIN', [
 			'restUrl' => esc_url_raw( rest_url( PP_REST_NAMESPACE . '/' ) ),
 			'nonce'   => wp_create_nonce( 'wp_rest' ),
@@ -108,6 +114,7 @@ class Admin {
 	}
 
 	public function render_dashboard(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only routing parameter, cast to int.
 		$pin_id = isset( $_GET['pin'] ) ? (int) $_GET['pin'] : 0;
 		if ( $pin_id ) {
 			include PP_PLUGIN_DIR . 'templates/admin-pin-detail.php';

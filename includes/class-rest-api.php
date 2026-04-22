@@ -263,7 +263,8 @@ class Rest_API {
 		];
 		$page_url = $req->get_param( 'page_url' );
 		if ( $page_url ) {
-			$args['meta_query'] = [ [ 'key' => '_pp_page_url', 'value' => $page_url ] ];
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded result (per_page<=100), single-key lookup.
+			$args['meta_query'] = array( array( 'key' => '_pp_page_url', 'value' => $page_url ) );
 		}
 		$status = $req->get_param( 'status' );
 		if ( $status && in_array( $status, CPT::all_statuses(), true ) ) {
@@ -384,8 +385,10 @@ class Rest_API {
 
 		/**
 		 * Fires after a pin is successfully created. Hook point for AI auto-suggest.
+		 *
+		 * @param int $post_id Newly created pin CPT ID.
 		 */
-		do_action( 'pp_pin_created', (int) $post_id );
+		do_action( 'proofingpins_pin_created', (int) $post_id );
 
 		return rest_ensure_response( $this->format_pin( get_post( $post_id ) ) );
 	}

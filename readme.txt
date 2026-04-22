@@ -1,7 +1,7 @@
 === Proofing Pins ===
 Contributors: lovedeep5
 Tags: feedback, proofing, comments, client review, elementor
-Requires at least: 6.2
+Requires at least: 6.3
 Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 0.1.0

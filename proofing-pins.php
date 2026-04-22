@@ -4,14 +4,13 @@
  * Plugin URI:        https://github.com/lovedeep5/Proofing-Pins
  * Description:       Pin-point proofing comments on the frontend with screenshots, managed from a clean admin dashboard. Optional AI suggestions and 1-click Apply to Elementor widgets.
  * Version:           0.1.0
- * Requires at least: 6.2
+ * Requires at least: 6.3
  * Tested up to:      6.9
  * Requires PHP:      7.4
  * Author:            Lovedeep
  * Author URI:        https://flaircross.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        https://wordpress.org/plugins/proofing-pins/
  * Text Domain:       proofing-pins
  * Domain Path:       /languages
  *

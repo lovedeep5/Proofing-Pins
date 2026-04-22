@@ -1,4 +1,12 @@
 <?php
+/**
+ * AI integration settings template. Variables are method-scoped at include time.
+ *
+ * @package ProofingPins
+ */
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap pp-admin">
@@ -56,7 +64,12 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<td>
 						<input type="password" name="api_key" id="pp-ai-key" value="<?php echo esc_attr( $masked_key ? '__unchanged__' : '' ); ?>" autocomplete="off" style="width:420px" placeholder="<?php esc_attr_e( 'sk-… / paste key', 'proofing-pins' ); ?>">
 						<?php if ( $masked_key ) : ?>
-							<span class="pp-ai-existing"><?php echo esc_html( sprintf( __( 'Saved key: %s', 'proofing-pins' ), $masked_key ) ); ?></span>
+							<span class="pp-ai-existing">
+								<?php
+								/* translators: %s: masked preview of the stored API key */
+								echo esc_html( sprintf( __( 'Saved key: %s', 'proofing-pins' ), $masked_key ) );
+								?>
+							</span>
 						<?php endif; ?>
 						<p class="description"><?php esc_html_e( 'Stored encrypted at rest. Leave as "__unchanged__" to keep the saved key.', 'proofing-pins' ); ?></p>
 						<button type="button" class="button" id="pp-ai-test"><?php esc_html_e( 'Test connection', 'proofing-pins' ); ?></button>

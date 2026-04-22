@@ -19,8 +19,20 @@ class Frontend {
 	public function enqueue(): void {
 		if ( ! $this->should_mount() ) { return; }
 
-		wp_register_script( 'pp-html-to-image', PP_PLUGIN_URL . 'assets/js/html-to-image.min.js', [], '1.11.13', true );
-		wp_enqueue_script( 'pp-widget', PP_PLUGIN_URL . 'assets/js/widget.js', [ 'pp-html-to-image' ], PP_VERSION, true );
+		wp_register_script(
+			'pp-html-to-image',
+			PP_PLUGIN_URL . 'assets/js/html-to-image.min.js',
+			array(),
+			'1.11.13',
+			array( 'in_footer' => true, 'strategy' => 'defer' )
+		);
+		wp_enqueue_script(
+			'pp-widget',
+			PP_PLUGIN_URL . 'assets/js/widget.js',
+			array( 'pp-html-to-image' ),
+			PP_VERSION,
+			array( 'in_footer' => true, 'strategy' => 'defer' )
+		);
 
 		$user      = wp_get_current_user();
 		$is_guest  = ! is_user_logged_in();
@@ -78,7 +90,9 @@ class Frontend {
 	}
 
 	private function current_page_path(): string {
-		$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '/';
+		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) { return '/'; }
+		$raw  = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+		$path = wp_parse_url( $raw, PHP_URL_PATH );
 		return $path ?: '/';
 	}
 }

@@ -1,4 +1,12 @@
 <?php
+/**
+ * Admin settings template. Variables are method-scoped at include time.
+ *
+ * @package ProofingPins
+ */
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $settings = wp_parse_args( get_option( 'pp_settings', [] ), [
 	'position'           => 'right',

@@ -1,11 +1,25 @@
 <?php
+/**
+ * Admin dashboard template — list/grid view of pins.
+ *
+ * Variables used below (e.g. $status_filter, $query_args, $q) are scoped to the
+ * including method (Admin::render_dashboard) at runtime. Plugin Check flags them
+ * as "non-prefixed globals" which is a known false-positive for WP templates.
+ *
+ * @package ProofingPins
+ */
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 use ProofingPins\CPT;
 
-$status_filter = isset( $_GET['status'] ) ? sanitize_key( $_GET['status'] ) : '';
+// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only display filters; no state change.
+$status_filter = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 $page_filter   = isset( $_GET['page_url'] ) ? sanitize_text_field( wp_unslash( $_GET['page_url'] ) ) : '';
-$view          = isset( $_GET['view'] ) && $_GET['view'] === 'grid' ? 'grid' : 'list';
-$paged         = max( 1, (int) ( $_GET['paged'] ?? 1 ) );
+$view          = isset( $_GET['view'] ) && sanitize_key( wp_unslash( $_GET['view'] ) ) === 'grid' ? 'grid' : 'list';
+$paged         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
 $per_page      = 20;
 
 $query_args = [
@@ -17,7 +31,8 @@ $query_args = [
 	'order'          => 'DESC',
 ];
 if ( $page_filter ) {
-	$query_args['meta_query'] = [ [ 'key' => '_pp_page_url', 'value' => $page_filter ] ];
+	// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin-only filter with single indexed key; bounded by per_page=20.
+	$query_args['meta_query'] = array( array( 'key' => '_pp_page_url', 'value' => $page_filter ) );
 }
 $q = new WP_Query( $query_args );
 
@@ -52,9 +67,22 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 		<p class="pp-admin-subtitle"><?php esc_html_e( 'All pinpoint comments from reviewers across your site.', 'proofing-pins' ); ?></p>
 	</div>
 
-	<?php if ( isset( $_GET['deleted'] ) ) : ?>
+	<?php
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Display-only notice after admin-init redirect; int-cast below.
+	if ( isset( $_GET['deleted'] ) ) :
+		$pp_deleted_count = (int) $_GET['deleted'];
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		?>
 		<div class="notice notice-success is-dismissible"><p>
-			<?php echo esc_html( sprintf( _n( '%d pin deleted.', '%d pins deleted.', (int) $_GET['deleted'], 'proofing-pins' ), (int) $_GET['deleted'] ) ); ?>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of pins deleted */
+					_n( '%d pin deleted.', '%d pins deleted.', $pp_deleted_count, 'proofing-pins' ),
+					$pp_deleted_count
+				)
+			);
+			?>
 		</p></div>
 	<?php endif; ?>
 
@@ -192,12 +220,15 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 
 	<?php
 	if ( $q->max_num_pages > 1 ) {
-		echo '<div class="pp-pagination">' . paginate_links( [
-			'base'    => add_query_arg( 'paged', '%#%' ),
-			'format'  => '',
-			'current' => $paged,
-			'total'   => $q->max_num_pages,
-		] ) . '</div>';
+		$pp_pagination_html = paginate_links(
+			array(
+				'base'    => add_query_arg( 'paged', '%#%' ),
+				'format'  => '',
+				'current' => $paged,
+				'total'   => $q->max_num_pages,
+			)
+		);
+		echo '<div class="pp-pagination">' . wp_kses_post( $pp_pagination_html ) . '</div>';
 	}
 	?>
 	</form>

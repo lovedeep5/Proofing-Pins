@@ -27,7 +27,7 @@ class Screenshot {
 		}
 
 		$uploads = wp_upload_dir();
-		$subdir  = 'proofing-pins/' . date( 'Y/m' );
+		$subdir  = 'proofing-pins/' . gmdate( 'Y/m' );
 		$dir     = trailingslashit( $uploads['basedir'] ) . $subdir;
 		$url_dir = trailingslashit( $uploads['baseurl'] ) . $subdir;
 		if ( ! file_exists( $dir ) ) {
@@ -49,7 +49,7 @@ class Screenshot {
 		];
 		$attach_id  = wp_insert_attachment( $attachment, $path );
 		if ( is_wp_error( $attach_id ) || ! $attach_id ) {
-			@unlink( $path );
+			wp_delete_file( $path );
 			return 0;
 		}
 		require_once ABSPATH . 'wp-admin/includes/image.php';
