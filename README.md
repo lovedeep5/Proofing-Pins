@@ -2,7 +2,7 @@
 
 WordPress plugin for pin-point client feedback. Click anywhere on a page to drop a comment, see it pinned on a viewport screenshot in the admin dashboard.
 
-**Author:** [Lovedeep](https://flaircross.com)
+**Author:** [flaircross.com](https://flaircross.com)
 **License:** GPL-2.0-or-later
 
 ## Features
