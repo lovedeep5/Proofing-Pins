@@ -9,7 +9,7 @@ class Rest_API {
 	}
 
 	public function register_routes(): void {
-		$ns = PP_REST_NAMESPACE;
+		$ns = PROOFING_PINS_REST_NAMESPACE;
 
 		register_rest_route( $ns, '/pins', [
 			[
@@ -82,11 +82,25 @@ class Rest_API {
 			'callback'            => [ $this, 'revert_change' ],
 			'permission_callback' => [ $this, 'can_manage' ],
 		] );
+
+		register_rest_route( $ns, '/teams/test', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'teams_test' ],
+			'permission_callback' => [ $this, 'can_manage' ],
+		] );
+	}
+
+	public function teams_test( \WP_REST_Request $req ): \WP_REST_Response {
+		$result = Teams::instance()->send_test();
+		return rest_ensure_response( [
+			'ok'      => ! empty( $result['ok'] ),
+			'message' => (string) ( $result['message'] ?? '' ),
+		] );
 	}
 
 	public function apply_change( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		$op = get_post_meta( $post->ID, '_pp_ai_change_op', true );
@@ -118,7 +132,7 @@ class Rest_API {
 
 	public function revert_change( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		$applied_op = get_post_meta( $post->ID, '_pp_applied_op', true );
@@ -153,7 +167,7 @@ class Rest_API {
 
 	public function ai_suggest( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		$result = AI::instance()->generate_for_pin( $post->ID );
@@ -255,7 +269,7 @@ class Rest_API {
 
 	public function list_pins( \WP_REST_Request $req ): \WP_REST_Response {
 		$args = [
-			'post_type'      => PP_POST_TYPE,
+			'post_type'      => PROOFING_PINS_POST_TYPE,
 			'post_status'    => CPT::all_statuses(),
 			'posts_per_page' => min( 100, (int) $req['per_page'] ),
 			'orderby'        => 'date',
@@ -368,7 +382,7 @@ class Rest_API {
 		$title   = sprintf( 'Pin on %s — "%s"', $page_url ?: '/', $excerpt );
 
 		$post_id = wp_insert_post( [
-			'post_type'    => PP_POST_TYPE,
+			'post_type'    => PROOFING_PINS_POST_TYPE,
 			'post_title'   => $title,
 			'post_content' => $body,
 			'post_status'  => CPT::STATUS_OPEN,
@@ -395,7 +409,7 @@ class Rest_API {
 
 	public function get_pin( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		return rest_ensure_response( $this->format_pin( $post, true ) );
@@ -403,7 +417,7 @@ class Rest_API {
 
 	public function update_pin( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		$params = $req->get_json_params();
@@ -420,7 +434,7 @@ class Rest_API {
 
 	public function delete_pin( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		Admin::delete_pin_fully( $post->ID );
@@ -429,7 +443,7 @@ class Rest_API {
 
 	public function add_reply( \WP_REST_Request $req ): \WP_REST_Response {
 		$post = get_post( (int) $req['id'] );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
 		$params = $req->get_json_params();

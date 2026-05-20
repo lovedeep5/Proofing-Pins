@@ -148,7 +148,7 @@ class AI {
 	// ---------- main generation path ----------
 	public function generate_for_pin( int $pin_id ) {
 		$post = get_post( $pin_id );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_Error( 'not_found', __( 'Pin not found.', 'proofing-pins' ) );
 		}
 		$s = $this->get_settings();

@@ -1,5 +1,5 @@
 === Proofing Pins ===
-Contributors: lovedeep5
+Contributors: lovedeep5, punjabideveloper
 Tags: feedback, proofing, comments, client review, elementor
 Requires at least: 6.3
 Tested up to: 6.9
@@ -84,6 +84,54 @@ Encrypted at rest with AES-256-CBC using a key derived from `AUTH_KEY`. The stor
 
 = 0.1.0 =
 Initial release.
+
+== External Services ==
+
+This plugin can connect to third-party AI services when the optional AI Suggestions feature is enabled. **AI is entirely opt-in and disabled by default.** No external connections are made unless you enable AI and enter an API key in Proofing → AI Integration.
+
+When AI is enabled and a new pin is created (or you manually trigger a suggestion), the following data is sent from your WordPress server directly to your configured AI provider: the pin's comment text, the page URL, the page title, the clicked element's tag name and a short HTML snippet, and the element's CSS selector. No data is sent to the plugin author at any time.
+
+Only the provider you configure is contacted. The four supported providers are documented below.
+
+= OpenAI =
+
+Used for: generating AI pin suggestions and listing available models.
+Data sent: pin comment, page URL, element context (tag, HTML snippet, selector).
+Sent when: AI suggestions are enabled and a pin is created (if auto-suggest is on), or when you click "Regenerate suggestion" in the pin detail view.
+
+* Service: https://openai.com/
+* Terms of Use: https://openai.com/policies/terms-of-use
+* Privacy Policy: https://openai.com/policies/privacy-policy
+
+= Anthropic =
+
+Used for: generating AI pin suggestions and listing available models.
+Data sent: pin comment, page URL, element context (tag, HTML snippet, selector).
+Sent when: AI suggestions are enabled and a pin is created (if auto-suggest is on), or when you click "Regenerate suggestion".
+
+* Service: https://www.anthropic.com/
+* Terms of Service: https://www.anthropic.com/legal/consumer-terms
+* Privacy Policy: https://www.anthropic.com/legal/privacy
+
+= Google Gemini (Generative Language API) =
+
+Used for: generating AI pin suggestions and listing available models via Google's Generative Language API (generativelanguage.googleapis.com).
+Data sent: pin comment, page URL, element context (tag, HTML snippet, selector).
+Sent when: AI suggestions are enabled and a pin is created (if auto-suggest is on), or when you click "Regenerate suggestion".
+
+* Service: https://ai.google.dev/
+* Terms of Service: https://ai.google.dev/gemini-api/terms
+* Privacy Policy: https://policies.google.com/privacy
+
+= OpenRouter =
+
+Used for: generating AI pin suggestions and listing available models via the OpenRouter gateway (openrouter.ai).
+Data sent: pin comment, page URL, element context (tag, HTML snippet, selector).
+Sent when: AI suggestions are enabled and a pin is created (if auto-suggest is on), or when you click "Regenerate suggestion".
+
+* Service: https://openrouter.ai/
+* Terms of Service: https://openrouter.ai/terms
+* Privacy Policy: https://openrouter.ai/privacy
 
 == Third-Party Libraries ==
 

@@ -15,7 +15,7 @@ class CPT {
 	}
 
 	public function register_post_type(): void {
-		register_post_type( PP_POST_TYPE, [
+		register_post_type( PROOFING_PINS_POST_TYPE, [
 			'labels'              => [
 				'name'          => __( 'Proofing Pins', 'proofing-pins' ),
 				'singular_name' => __( 'Proofing Pin', 'proofing-pins' ),

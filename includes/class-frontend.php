@@ -21,16 +21,16 @@ class Frontend {
 
 		wp_register_script(
 			'pp-html-to-image',
-			PP_PLUGIN_URL . 'assets/js/html-to-image.min.js',
+			PROOFING_PINS_PLUGIN_URL . 'assets/js/html-to-image.min.js',
 			array(),
 			'1.11.13',
 			array( 'in_footer' => true, 'strategy' => 'defer' )
 		);
 		wp_enqueue_script(
 			'pp-widget',
-			PP_PLUGIN_URL . 'assets/js/widget.js',
+			PROOFING_PINS_PLUGIN_URL . 'assets/js/widget.js',
 			array( 'pp-html-to-image' ),
-			PP_VERSION,
+			PROOFING_PINS_VERSION,
 			array( 'in_footer' => true, 'strategy' => 'defer' )
 		);
 
@@ -44,9 +44,9 @@ class Frontend {
 		] );
 
 		wp_localize_script( 'pp-widget', 'PP_CONFIG', [
-			'restUrl'    => esc_url_raw( rest_url( PP_REST_NAMESPACE . '/' ) ),
+			'restUrl'    => esc_url_raw( rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ) ),
 			'nonce'      => wp_create_nonce( 'wp_rest' ),
-			'pluginUrl'  => PP_PLUGIN_URL,
+			'pluginUrl'  => PROOFING_PINS_PLUGIN_URL,
 			'user'       => [
 				'id'        => $is_guest ? 0 : $user->ID,
 				'name'      => $is_guest ? '' : $user->display_name,

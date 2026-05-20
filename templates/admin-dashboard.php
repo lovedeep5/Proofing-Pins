@@ -23,7 +23,7 @@ $paged         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 
 $per_page      = 20;
 
 $query_args = [
-	'post_type'      => PP_POST_TYPE,
+	'post_type'      => PROOFING_PINS_POST_TYPE,
 	'post_status'    => in_array( $status_filter, CPT::all_statuses(), true ) ? $status_filter : CPT::all_statuses(),
 	'posts_per_page' => $per_page,
 	'paged'          => $paged,
@@ -38,7 +38,7 @@ $q = new WP_Query( $query_args );
 
 $status_counts = [];
 foreach ( CPT::all_statuses() as $s ) {
-	$status_counts[ $s ] = (int) ( wp_count_posts( PP_POST_TYPE )->$s ?? 0 );
+	$status_counts[ $s ] = (int) ( wp_count_posts( PROOFING_PINS_POST_TYPE )->$s ?? 0 );
 }
 
 $status_labels = [
@@ -233,31 +233,3 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 	?>
 	</form>
 </div>
-<script>
-function pp_confirmBulk(f) {
-	const act = f.pp_bulk_action && f.pp_bulk_action.value;
-	if (!act) { alert('Pick a bulk action first.'); return false; }
-	const n = f.querySelectorAll('.pp-row-check:checked').length;
-	if (!n) { alert('Select at least one pin.'); return false; }
-	return confirm('Delete ' + n + ' pin(s) — screenshots and replies will be removed. This cannot be undone.');
-}
-(function(){
-	const all = document.getElementById('pp-check-all');
-	const boxes = document.querySelectorAll('.pp-row-check');
-	const sel = document.querySelector('.pp-bulk-selected');
-	function updateCount() {
-		if (!sel) return;
-		const n = document.querySelectorAll('.pp-row-check:checked').length;
-		sel.textContent = n + ' selected';
-	}
-	if (all) all.addEventListener('change', () => { boxes.forEach(b => b.checked = all.checked); updateCount(); });
-	boxes.forEach(b => b.addEventListener('change', updateCount));
-	document.querySelectorAll('.pp-list tbody tr[data-detail-url]').forEach(tr => {
-		tr.addEventListener('click', (e) => {
-			if (e.target.closest('input,button,a,label')) return;
-			location.href = tr.getAttribute('data-detail-url');
-		});
-		tr.style.cursor = 'pointer';
-	});
-})();
-</script>

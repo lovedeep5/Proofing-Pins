@@ -16,7 +16,7 @@ use ProofingPins\AI;
 use ProofingPins\Elementor_Writer;
 
 $pin = get_post( $pin_id );
-if ( ! $pin || $pin->post_type !== PP_POST_TYPE ) {
+if ( ! $pin || $pin->post_type !== PROOFING_PINS_POST_TYPE ) {
 	echo '<div class="wrap"><p>' . esc_html__( 'Pin not found.', 'proofing-pins' ) . '</p></div>';
 	return;
 }

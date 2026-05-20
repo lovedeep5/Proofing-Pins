@@ -9,7 +9,7 @@
  * Requires PHP:      7.4
  * Author:            flaircross.com
  * Author URI:        https://flaircross.com
- * License:           GPL-2.0-or-later
+ * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       proofing-pins
  * Domain Path:       /languages
@@ -21,12 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PP_VERSION', '0.1.0' );
-define( 'PP_PLUGIN_FILE', __FILE__ );
-define( 'PP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'PP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'PP_POST_TYPE', 'pp_pin' );
-define( 'PP_REST_NAMESPACE', 'proofing-pins/v1' );
+define( 'PROOFING_PINS_VERSION', '0.1.0' );
+define( 'PROOFING_PINS_PLUGIN_FILE', __FILE__ );
+define( 'PROOFING_PINS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'PROOFING_PINS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'PROOFING_PINS_POST_TYPE', 'pp_pin' );
+define( 'PROOFING_PINS_REST_NAMESPACE', 'proofing-pins/v1' );
 
 spl_autoload_register( function ( $class ) {
 	if ( strpos( $class, 'ProofingPins\\' ) !== 0 ) {
@@ -34,7 +34,7 @@ spl_autoload_register( function ( $class ) {
 	}
 	$relative = strtolower( str_replace( [ 'ProofingPins\\', '_' ], [ '', '-' ], $class ) );
 	$relative = str_replace( '\\', '/', $relative );
-	$file     = PP_PLUGIN_DIR . 'includes/class-' . $relative . '.php';
+	$file     = PROOFING_PINS_PLUGIN_DIR . 'includes/class-' . $relative . '.php';
 	if ( file_exists( $file ) ) {
 		require_once $file;
 	}
