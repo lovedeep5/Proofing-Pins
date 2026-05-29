@@ -32,7 +32,7 @@ $query_args = [
 ];
 if ( $page_filter ) {
 	// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin-only filter with single indexed key; bounded by per_page=20.
-	$query_args['meta_query'] = array( array( 'key' => '_pp_page_url', 'value' => $page_filter ) );
+	$query_args['meta_query'] = array( array( 'key' => '_proopin_page_url', 'value' => $page_filter ) );
 }
 $q = new WP_Query( $query_args );
 
@@ -56,21 +56,27 @@ $status_colors = [
 
 $distinct_urls = $GLOBALS['wpdb']->get_col( $GLOBALS['wpdb']->prepare(
 	"SELECT DISTINCT meta_value FROM {$GLOBALS['wpdb']->postmeta} WHERE meta_key = %s ORDER BY meta_value ASC LIMIT 200",
-	'_pp_page_url'
+	'_proopin_page_url'
 ) );
 
 $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 ?>
-<div class="wrap pp-admin">
-	<div class="pp-admin-header">
-		<h1><?php esc_html_e( 'Proofing Pins', 'proofing-pins' ); ?></h1>
-		<p class="pp-admin-subtitle"><?php esc_html_e( 'All pinpoint comments from reviewers across your site.', 'proofing-pins' ); ?></p>
+<div class="wrap proopin-admin">
+	<div class="proopin-admin-header">
+		<div class="proopin-admin-header-text">
+			<h1><?php esc_html_e( 'Proofing Pins', 'proofing-pins' ); ?></h1>
+			<p class="proopin-admin-subtitle"><?php esc_html_e( 'All pinpoint comments from reviewers across your site.', 'proofing-pins' ); ?></p>
+		</div>
+		<a class="proopin-tutorial-link" href="https://www.youtube.com/watch?v=8UJX0GmM79k" target="_blank" rel="noopener">
+			<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+			<?php esc_html_e( 'Watch tutorial', 'proofing-pins' ); ?>
+		</a>
 	</div>
 
 	<?php
 	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Display-only notice after admin-init redirect; int-cast below.
 	if ( isset( $_GET['deleted'] ) ) :
-		$pp_deleted_count = (int) $_GET['deleted'];
+		$proopin_deleted_count = (int) $_GET['deleted'];
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		?>
 		<div class="notice notice-success is-dismissible"><p>
@@ -78,29 +84,29 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 			echo esc_html(
 				sprintf(
 					/* translators: %d: number of pins deleted */
-					_n( '%d pin deleted.', '%d pins deleted.', $pp_deleted_count, 'proofing-pins' ),
-					$pp_deleted_count
+					_n( '%d pin deleted.', '%d pins deleted.', $proopin_deleted_count, 'proofing-pins' ),
+					$proopin_deleted_count
 				)
 			);
 			?>
 		</p></div>
 	<?php endif; ?>
 
-	<div class="pp-filters">
-		<div class="pp-filter-chips">
-			<a class="pp-chip <?php echo $status_filter === '' ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'page' => 'proofing-pins' ], admin_url( 'admin.php' ) ) ); ?>">
+	<div class="proopin-filters">
+		<div class="proopin-filter-chips">
+			<a class="proopin-chip <?php echo $status_filter === '' ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'page' => 'proofing-pins' ], admin_url( 'admin.php' ) ) ); ?>">
 				<?php esc_html_e( 'All', 'proofing-pins' ); ?>
 			</a>
 			<?php foreach ( $status_labels as $key => $label ) : ?>
-				<a class="pp-chip <?php echo $status_filter === $key ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'page' => 'proofing-pins', 'status' => $key ], admin_url( 'admin.php' ) ) ); ?>">
-					<span class="pp-chip-dot" style="background:<?php echo esc_attr( $status_colors[ $key ] ); ?>"></span>
+				<a class="proopin-chip <?php echo $status_filter === $key ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'page' => 'proofing-pins', 'status' => $key ], admin_url( 'admin.php' ) ) ); ?>">
+					<span class="proopin-chip-dot" style="background:<?php echo esc_attr( $status_colors[ $key ] ); ?>"></span>
 					<?php echo esc_html( $label ); ?>
-					<span class="pp-chip-count"><?php echo (int) $status_counts[ $key ]; ?></span>
+					<span class="proopin-chip-count"><?php echo (int) $status_counts[ $key ]; ?></span>
 				</a>
 			<?php endforeach; ?>
 		</div>
 
-		<form method="get" class="pp-filter-form">
+		<form method="get" class="proopin-filter-form">
 			<input type="hidden" name="page" value="proofing-pins">
 			<?php if ( $status_filter ) : ?><input type="hidden" name="status" value="<?php echo esc_attr( $status_filter ); ?>"><?php endif; ?>
 			<select name="page_url" onchange="this.form.submit()">
@@ -109,29 +115,29 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 					<option value="<?php echo esc_attr( $u ); ?>" <?php selected( $page_filter, $u ); ?>><?php echo esc_html( $u ); ?></option>
 				<?php endforeach; ?>
 			</select>
-			<div class="pp-view-toggle">
+			<div class="proopin-view-toggle">
 				<a class="<?php echo $view === 'list' ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'view' => 'list' ] ) ); ?>"><span class="dashicons dashicons-list-view"></span></a>
 				<a class="<?php echo $view === 'grid' ? 'active' : ''; ?>" href="<?php echo esc_url( add_query_arg( [ 'view' => 'grid' ] ) ); ?>"><span class="dashicons dashicons-grid-view"></span></a>
 			</div>
 		</form>
 	</div>
 
-	<form method="post" id="pp-bulk-form" onsubmit="return pp_confirmBulk(this);">
-		<?php wp_nonce_field( 'pp_bulk_delete' ); ?>
+	<form method="post" id="proopin-bulk-form" onsubmit="return proopin_confirmBulk(this);">
+		<?php wp_nonce_field( 'proopin_bulk_delete' ); ?>
 		<?php if ( $can_manage && $q->have_posts() ) : ?>
-			<div class="pp-bulk-bar">
-				<select name="pp_bulk_action">
+			<div class="proopin-bulk-bar">
+				<select name="proopin_bulk_action">
 					<option value=""><?php esc_html_e( 'Bulk actions', 'proofing-pins' ); ?></option>
 					<option value="delete"><?php esc_html_e( 'Delete (incl. screenshot & replies)', 'proofing-pins' ); ?></option>
 				</select>
 				<button type="submit" class="button"><?php esc_html_e( 'Apply', 'proofing-pins' ); ?></button>
-				<span class="pp-bulk-selected">0 <?php esc_html_e( 'selected', 'proofing-pins' ); ?></span>
+				<span class="proopin-bulk-selected">0 <?php esc_html_e( 'selected', 'proofing-pins' ); ?></span>
 			</div>
 		<?php endif; ?>
 
 	<?php if ( ! $q->have_posts() ) : ?>
-		<div class="pp-empty">
-			<div class="pp-empty-icon">
+		<div class="proopin-empty">
+			<div class="proopin-empty-icon">
 				<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 			</div>
 			<h2><?php esc_html_e( 'No pins yet', 'proofing-pins' ); ?></h2>
@@ -139,44 +145,42 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 			<a class="button button-primary" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank"><?php esc_html_e( 'Open site', 'proofing-pins' ); ?></a>
 		</div>
 	<?php elseif ( $view === 'grid' ) : ?>
-		<div class="pp-grid">
+		<div class="proopin-grid">
 			<?php while ( $q->have_posts() ) : $q->the_post(); $pid = get_the_ID();
-				$screenshot_id  = (int) get_post_meta( $pid, '_pp_screenshot_id', true );
+				$screenshot_id  = (int) get_post_meta( $pid, '_proopin_screenshot_id', true );
 				$thumb          = $screenshot_id ? wp_get_attachment_image_src( $screenshot_id, 'medium' ) : null;
 				$status         = get_post_status( $pid );
 				$author         = get_userdata( get_post_field( 'post_author', $pid ) );
-				$page_url       = get_post_meta( $pid, '_pp_page_url', true );
-				$pin_x          = (float) get_post_meta( $pid, '_pp_pin_x', true );
-				$pin_y          = (float) get_post_meta( $pid, '_pp_pin_y', true );
+				$page_url       = get_post_meta( $pid, '_proopin_page_url', true );
 				$detail_url     = add_query_arg( [ 'page' => 'proofing-pins', 'pin' => $pid ], admin_url( 'admin.php' ) );
 			?>
-				<a class="pp-card" href="<?php echo esc_url( $detail_url ); ?>">
-					<div class="pp-card-thumb">
+				<a class="proopin-card" href="<?php echo esc_url( $detail_url ); ?>">
+					<div class="proopin-card-thumb">
 						<?php if ( $thumb ) : ?>
 							<img src="<?php echo esc_url( $thumb[0] ); ?>" alt="">
 						<?php else : ?>
-							<div class="pp-card-thumb-empty"><?php esc_html_e( 'No screenshot', 'proofing-pins' ); ?></div>
+							<div class="proopin-card-thumb-empty"><?php esc_html_e( 'No screenshot', 'proofing-pins' ); ?></div>
 						<?php endif; ?>
 					</div>
-					<div class="pp-card-meta">
-						<span class="pp-status" style="background:<?php echo esc_attr( $status_colors[ $status ] ); ?>"><?php echo esc_html( $status_labels[ $status ] ); ?></span>
-						<span class="pp-card-page"><?php echo esc_html( $page_url ); ?></span>
+					<div class="proopin-card-meta">
+						<span class="proopin-status" style="background:<?php echo esc_attr( $status_colors[ $status ] ); ?>"><?php echo esc_html( $status_labels[ $status ] ); ?></span>
+						<span class="proopin-card-page"><?php echo esc_html( $page_url ); ?></span>
 					</div>
-					<div class="pp-card-excerpt"><?php echo esc_html( wp_trim_words( get_the_content(), 18, '…' ) ); ?></div>
-					<div class="pp-card-foot">
+					<div class="proopin-card-excerpt"><?php echo esc_html( wp_trim_words( get_the_content(), 18, '…' ) ); ?></div>
+					<div class="proopin-card-foot">
 						<?php echo get_avatar( $author->ID ?? 0, 20 ); ?>
 						<span><?php echo esc_html( $author->display_name ?? '' ); ?></span>
-						<span class="pp-dot">•</span>
+						<span class="proopin-dot">•</span>
 						<span><?php echo esc_html( human_time_diff( get_post_time( 'U', true, $pid ), current_time( 'timestamp', true ) ) . ' ' . __( 'ago', 'proofing-pins' ) ); ?></span>
 					</div>
 				</a>
 			<?php endwhile; wp_reset_postdata(); ?>
 		</div>
 	<?php else : ?>
-		<table class="pp-list">
+		<table class="proopin-list">
 			<thead>
 				<tr>
-					<?php if ( $can_manage ) : ?><th style="width:30px"><input type="checkbox" id="pp-check-all"></th><?php endif; ?>
+					<?php if ( $can_manage ) : ?><th style="width:30px"><input type="checkbox" id="proopin-check-all"></th><?php endif; ?>
 					<th style="width:80px"></th>
 					<th><?php esc_html_e( 'Comment', 'proofing-pins' ); ?></th>
 					<th style="width:160px"><?php esc_html_e( 'Page', 'proofing-pins' ); ?></th>
@@ -187,21 +191,19 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 			</thead>
 			<tbody>
 				<?php while ( $q->have_posts() ) : $q->the_post(); $pid = get_the_ID();
-					$screenshot_id  = (int) get_post_meta( $pid, '_pp_screenshot_id', true );
+					$screenshot_id  = (int) get_post_meta( $pid, '_proopin_screenshot_id', true );
 					$thumb          = $screenshot_id ? wp_get_attachment_image_src( $screenshot_id, 'thumbnail' ) : null;
 					$status         = get_post_status( $pid );
 					$author         = get_userdata( get_post_field( 'post_author', $pid ) );
-					$guest_name     = get_post_meta( $pid, '_pp_guest_name', true );
+					$guest_name     = get_post_meta( $pid, '_proopin_guest_name', true );
 					$author_label   = $author ? $author->display_name : ( $guest_name ?: __( 'Guest', 'proofing-pins' ) );
-					$page_url       = get_post_meta( $pid, '_pp_page_url', true );
-					$pin_x          = (float) get_post_meta( $pid, '_pp_pin_x', true );
-					$pin_y          = (float) get_post_meta( $pid, '_pp_pin_y', true );
+					$page_url       = get_post_meta( $pid, '_proopin_page_url', true );
 					$detail_url     = add_query_arg( [ 'page' => 'proofing-pins', 'pin' => $pid ], admin_url( 'admin.php' ) );
 				?>
 					<tr data-detail-url="<?php echo esc_url( $detail_url ); ?>">
-						<?php if ( $can_manage ) : ?><td onclick="event.stopPropagation()"><input type="checkbox" class="pp-row-check" name="pin_ids[]" value="<?php echo (int) $pid; ?>"></td><?php endif; ?>
+						<?php if ( $can_manage ) : ?><td onclick="event.stopPropagation()"><input type="checkbox" class="proopin-row-check" name="pin_ids[]" value="<?php echo (int) $pid; ?>"></td><?php endif; ?>
 						<td>
-							<div class="pp-mini-thumb">
+							<div class="proopin-mini-thumb">
 								<?php if ( $thumb ) : ?>
 									<img src="<?php echo esc_url( $thumb[0] ); ?>" alt="">
 								<?php endif; ?>
@@ -210,7 +212,7 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 						<td><strong><?php echo esc_html( wp_trim_words( get_the_content(), 16, '…' ) ); ?></strong></td>
 						<td><code><?php echo esc_html( $page_url ); ?></code></td>
 						<td><?php echo esc_html( $author_label ); ?></td>
-						<td><span class="pp-status" style="background:<?php echo esc_attr( $status_colors[ $status ] ); ?>"><?php echo esc_html( $status_labels[ $status ] ); ?></span></td>
+						<td><span class="proopin-status" style="background:<?php echo esc_attr( $status_colors[ $status ] ); ?>"><?php echo esc_html( $status_labels[ $status ] ); ?></span></td>
 						<td><?php echo esc_html( human_time_diff( get_post_time( 'U', true, $pid ), current_time( 'timestamp', true ) ) ); ?></td>
 					</tr>
 				<?php endwhile; wp_reset_postdata(); ?>
@@ -220,7 +222,7 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 
 	<?php
 	if ( $q->max_num_pages > 1 ) {
-		$pp_pagination_html = paginate_links(
+		$proopin_pagination_html = paginate_links(
 			array(
 				'base'    => add_query_arg( 'paged', '%#%' ),
 				'format'  => '',
@@ -228,7 +230,7 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 				'total'   => $q->max_num_pages,
 			)
 		);
-		echo '<div class="pp-pagination">' . wp_kses_post( $pp_pagination_html ) . '</div>';
+		echo '<div class="proopin-pagination">' . wp_kses_post( $proopin_pagination_html ) . '</div>';
 	}
 	?>
 	</form>

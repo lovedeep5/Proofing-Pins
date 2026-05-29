@@ -15,8 +15,8 @@ class Activator {
 			'allowed_roles'  => [ 'subscriber', 'contributor', 'author', 'editor', 'administrator' ],
 			'auto_resolve_days' => 0,
 		];
-		if ( get_option( 'pp_settings' ) === false ) {
-			update_option( 'pp_settings', $defaults );
+		if ( get_option( 'proopin_settings' ) === false ) {
+			update_option( 'proopin_settings', $defaults );
 		}
 
 		$uploads = wp_upload_dir();

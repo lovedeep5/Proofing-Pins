@@ -15,51 +15,73 @@ global $wpdb;
 
 // Delete all pin posts + their screenshots.
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time uninstall, no cache applicable.
-$pp_post_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s", 'pp_pin' ) );
-foreach ( $pp_post_ids as $pp_post_id ) {
-	$pp_screenshot_id = (int) get_post_meta( $pp_post_id, '_pp_screenshot_id', true );
-	if ( $pp_screenshot_id ) {
-		wp_delete_attachment( $pp_screenshot_id, true );
+$proopin_post_ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s", 'proopin_pin' ) );
+foreach ( $proopin_post_ids as $proopin_post_id ) {
+	$proopin_screenshot_id = (int) get_post_meta( $proopin_post_id, '_proopin_screenshot_id', true );
+	if ( $proopin_screenshot_id ) {
+		wp_delete_attachment( $proopin_screenshot_id, true );
 	}
-	wp_delete_post( $pp_post_id, true );
+	wp_delete_post( $proopin_post_id, true );
 }
 
-delete_option( 'pp_settings' );
-delete_option( 'pp_ai_settings' );
+delete_option( 'proopin_settings' );
+delete_option( 'proopin_ai_settings' );
+delete_option( 'proopin_teams_settings' );
 
-$pp_caps = array(
-	'pp_create_pin',
-	'pp_view_pins',
-	'pp_manage_pins',
-	'edit_pp_pin',
-	'read_pp_pin',
-	'delete_pp_pin',
-	'edit_pp_pins',
-	'edit_others_pp_pins',
-	'publish_pp_pins',
-	'read_private_pp_pins',
-	'delete_pp_pins',
+// Clear any pending AI suggestion cron events (one-shot, args=[$pin_id]).
+wp_clear_scheduled_hook( 'proopin_ai_generate_suggestion' );
+
+// Sweep transients: per-IP guest rate-limit + cached provider model lists.
+// They auto-expire (1h / 6h) but a thorough uninstall should not leave rows
+// in wp_options for the new install to inherit.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time uninstall.
+$proopin_transient_rows = $wpdb->get_col(
+	"SELECT option_name FROM {$wpdb->options}
+	  WHERE option_name LIKE '\\_transient\\_proopin\\_%'
+	     OR option_name LIKE '\\_transient\\_timeout\\_proopin\\_%'"
 );
-foreach ( array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' ) as $pp_role_key ) {
-	$pp_role = get_role( $pp_role_key );
-	if ( ! $pp_role ) {
+foreach ( $proopin_transient_rows as $proopin_transient_row ) {
+	if ( strpos( $proopin_transient_row, '_transient_timeout_' ) === 0 ) {
+		delete_option( $proopin_transient_row );
+	} else {
+		// Use the transient API so multisite/object-cache backends are notified.
+		delete_transient( substr( $proopin_transient_row, strlen( '_transient_' ) ) );
+	}
+}
+
+$proopin_caps = array(
+	'proopin_create_pin',
+	'proopin_view_pins',
+	'proopin_manage_pins',
+	'edit_proopin_pin',
+	'read_proopin_pin',
+	'delete_proopin_pin',
+	'edit_proopin_pins',
+	'edit_others_proopin_pins',
+	'publish_proopin_pins',
+	'read_private_proopin_pins',
+	'delete_proopin_pins',
+);
+foreach ( array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' ) as $proopin_role_key ) {
+	$proopin_role = get_role( $proopin_role_key );
+	if ( ! $proopin_role ) {
 		continue;
 	}
-	foreach ( $pp_caps as $pp_cap ) {
-		$pp_role->remove_cap( $pp_cap );
+	foreach ( $proopin_caps as $proopin_cap ) {
+		$proopin_role->remove_cap( $proopin_cap );
 	}
 }
 
 // Remove uploaded screenshots via WP_Filesystem.
-$pp_uploads = wp_upload_dir();
-$pp_dir     = trailingslashit( $pp_uploads['basedir'] ) . 'proofing-pins';
-if ( is_dir( $pp_dir ) ) {
+$proopin_uploads = wp_upload_dir();
+$proopin_dir     = trailingslashit( $proopin_uploads['basedir'] ) . 'proofing-pins';
+if ( is_dir( $proopin_dir ) ) {
 	if ( ! function_exists( 'WP_Filesystem' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 	}
 	WP_Filesystem();
 	global $wp_filesystem;
 	if ( isset( $wp_filesystem ) && $wp_filesystem ) {
-		$wp_filesystem->delete( $pp_dir, true ); // true = recursive
+		$wp_filesystem->delete( $proopin_dir, true ); // true = recursive
 	}
 }

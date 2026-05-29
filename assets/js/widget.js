@@ -1,20 +1,20 @@
 (() => {
 	'use strict';
-	if (!window.PP_CONFIG) return;
-	const CFG = window.PP_CONFIG;
+	if (!window.PROOPIN_CONFIG) return;
+	const CFG = window.PROOPIN_CONFIG;
 	const I = CFG.i18n;
 
 	const STATUS_LABELS = {
-		pp_open: I.statusOpen,
-		pp_in_progress: I.statusInProgress,
-		pp_resolved: I.statusResolved,
-		pp_archived: I.statusArchived,
+		proopin_open: I.statusOpen,
+		proopin_in_progress: I.statusInProgress,
+		proopin_resolved: I.statusResolved,
+		proopin_archived: I.statusArchived,
 	};
 	const STATUS_COLORS = {
-		pp_open: '#ef4444',
-		pp_in_progress: '#f59e0b',
-		pp_resolved: '#10b981',
-		pp_archived: '#9ca3af',
+		proopin_open: '#ef4444',
+		proopin_in_progress: '#f59e0b',
+		proopin_resolved: '#10b981',
+		proopin_archived: '#9ca3af',
 	};
 
 	const state = {
@@ -42,7 +42,7 @@
 		probe.remove();
 		// Persist in sessionStorage so it survives tab navigations within the session.
 		try {
-			sessionStorage.setItem('pp_topOffset', JSON.stringify({ top, left, t: Date.now() }));
+			sessionStorage.setItem('proopin_topOffset', JSON.stringify({ top, left, t: Date.now() }));
 		} catch {}
 		return { top, left };
 	}
@@ -56,34 +56,34 @@
 	const css = `
 	:host { all: initial; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 	* { box-sizing: border-box; }
-	.pp-toggle {
+	.proopin-toggle {
 		position: fixed; bottom: 24px; ${CFG.settings.position === 'left' ? 'left' : 'right'}: 24px;
 		width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-		background: var(--pp-brand); color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+		background: var(--proopin-brand); color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 		display: flex; align-items: center; justify-content: center;
 		z-index: 2147483646; transition: transform 0.15s ease, box-shadow 0.15s ease;
 	}
-	.pp-toggle:hover { transform: scale(1.06); box-shadow: 0 12px 32px rgba(0,0,0,0.22); }
-	.pp-toggle.active { background: #111827; }
-	.pp-toggle svg { width: 22px; height: 22px; }
-	.pp-badge {
+	.proopin-toggle:hover { transform: scale(1.06); box-shadow: 0 12px 32px rgba(0,0,0,0.22); }
+	.proopin-toggle.active { background: #111827; }
+	.proopin-toggle svg { width: 22px; height: 22px; }
+	.proopin-badge {
 		position: absolute; top: -4px; right: -4px;
 		background: #ef4444; color: #fff; font-size: 11px; font-weight: 700;
 		min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
 		display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
 	}
-	.pp-statusbar {
+	.proopin-statusbar {
 		position: fixed; top: 0; left: 0; right: 0;
 		background: #111827; color: #fff; padding: 10px 16px; font-size: 13px;
 		display: flex; align-items: center; justify-content: center; gap: 12px;
 		z-index: 2147483645; transform: translateY(-100%); transition: transform 0.2s ease;
 	}
-	.pp-statusbar.visible { transform: translateY(0); }
-	.pp-statusbar kbd {
+	.proopin-statusbar.visible { transform: translateY(0); }
+	.proopin-statusbar kbd {
 		background: rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 6px;
 		font-family: ui-monospace, monospace; font-size: 11px;
 	}
-	.pp-pin {
+	.proopin-pin {
 		position: absolute; width: 28px; height: 28px; border-radius: 50% 50% 50% 2px;
 		transform: translate(-4px, -24px) rotate(-45deg);
 		background: var(--pin-color, #ef4444); color: #fff; border: 2px solid #fff;
@@ -92,80 +92,80 @@
 		font-size: 11px; font-weight: 700; z-index: 2147483640;
 		transition: transform 0.15s ease;
 	}
-	.pp-pin span { transform: rotate(45deg); }
-	.pp-pin:hover { transform: translate(-4px, -28px) rotate(-45deg) scale(1.1); }
-	.pp-pin.pending { opacity: 0.55; }
-	.pp-composer, .pp-thread {
+	.proopin-pin span { transform: rotate(45deg); }
+	.proopin-pin:hover { transform: translate(-4px, -28px) rotate(-45deg) scale(1.1); }
+	.proopin-pin.pending { opacity: 0.55; }
+	.proopin-composer, .proopin-thread {
 		position: fixed; background: #fff; border-radius: 12px;
 		box-shadow: 0 20px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05);
 		z-index: 2147483641; overflow: hidden;
 	}
-	.pp-composer { width: 320px; padding: 14px; }
-	.pp-composer-user { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: #6b7280; }
-	.pp-composer-user img { width: 24px; height: 24px; border-radius: 50%; }
-	.pp-composer textarea {
+	.proopin-composer { width: 320px; padding: 14px; }
+	.proopin-composer-user { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: #6b7280; }
+	.proopin-composer-user img { width: 24px; height: 24px; border-radius: 50%; }
+	.proopin-composer textarea {
 		width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e5e7eb;
 		border-radius: 8px; font: inherit; font-size: 14px; resize: vertical;
 	}
-	.pp-composer textarea:focus { outline: none; border-color: var(--pp-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pp-brand) 20%, transparent); }
-	.pp-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-	.pp-btn {
+	.proopin-composer textarea:focus { outline: none; border-color: var(--proopin-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--proopin-brand) 20%, transparent); }
+	.proopin-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+	.proopin-btn {
 		padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500;
 		border: none; cursor: pointer; transition: background 0.12s ease;
 	}
-	.pp-btn-primary { background: var(--pp-brand); color: #fff; }
-	.pp-btn-primary:hover { filter: brightness(1.08); }
-	.pp-btn-primary:disabled { opacity: 0.6; cursor: wait; }
-	.pp-btn-ghost { background: transparent; color: #6b7280; }
-	.pp-btn-ghost:hover { background: #f3f4f6; }
-	.pp-status {
+	.proopin-btn-primary { background: var(--proopin-brand); color: #fff; }
+	.proopin-btn-primary:hover { filter: brightness(1.08); }
+	.proopin-btn-primary:disabled { opacity: 0.6; cursor: wait; }
+	.proopin-btn-ghost { background: transparent; color: #6b7280; }
+	.proopin-btn-ghost:hover { background: #f3f4f6; }
+	.proopin-status {
 		font-size: 11px; font-weight: 600; text-transform: uppercase;
 		letter-spacing: 0.04em; padding: 2px 8px; border-radius: 10px;
 		color: #fff; display: inline-block;
 	}
-	.pp-thread {
+	.proopin-thread {
 		right: 20px; top: 20px; bottom: 20px; width: 360px;
 		display: flex; flex-direction: column;
 	}
-	.pp-thread-header { padding: 16px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; }
-	.pp-thread-meta { font-size: 12px; color: #6b7280; }
-	.pp-thread-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: #9ca3af; padding: 4px; }
-	.pp-thread-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
-	.pp-msg { margin-bottom: 14px; }
-	.pp-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-	.pp-msg-head img { width: 24px; height: 24px; border-radius: 50%; }
-	.pp-msg-author { font-weight: 600; font-size: 13px; color: #111827; }
-	.pp-msg-time { font-size: 11px; color: #9ca3af; }
-	.pp-msg-body { font-size: 14px; line-height: 1.5; color: #374151; white-space: pre-wrap; word-wrap: break-word; padding-left: 32px; }
-	.pp-thread-reply { padding: 12px 16px; border-top: 1px solid #f3f4f6; }
-	.pp-thread-reply textarea {
+	.proopin-thread-header { padding: 16px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; }
+	.proopin-thread-meta { font-size: 12px; color: #6b7280; }
+	.proopin-thread-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: #9ca3af; padding: 4px; }
+	.proopin-thread-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+	.proopin-msg { margin-bottom: 14px; }
+	.proopin-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+	.proopin-msg-head img { width: 24px; height: 24px; border-radius: 50%; }
+	.proopin-msg-author { font-weight: 600; font-size: 13px; color: #111827; }
+	.proopin-msg-time { font-size: 11px; color: #9ca3af; }
+	.proopin-msg-body { font-size: 14px; line-height: 1.5; color: #374151; white-space: pre-wrap; word-wrap: break-word; padding-left: 32px; }
+	.proopin-thread-reply { padding: 12px 16px; border-top: 1px solid #f3f4f6; }
+	.proopin-thread-reply textarea {
 		width: 100%; min-height: 60px; padding: 8px; border: 1px solid #e5e7eb;
 		border-radius: 8px; font: inherit; font-size: 13px; resize: vertical;
 	}
-	.pp-thread-reply textarea:focus { outline: none; border-color: var(--pp-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pp-brand) 20%, transparent); }
-	.pp-thread-status { padding: 10px 16px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 8px; background: #fafafa; font-size: 12px; }
-	.pp-thread-status select { font: inherit; font-size: 12px; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; }
-	.pp-toast {
+	.proopin-thread-reply textarea:focus { outline: none; border-color: var(--proopin-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--proopin-brand) 20%, transparent); }
+	.proopin-thread-status { padding: 10px 16px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 8px; background: #fafafa; font-size: 12px; }
+	.proopin-thread-status select { font: inherit; font-size: 12px; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; }
+	.proopin-toast {
 		position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
 		background: #111827; color: #fff; padding: 10px 16px; border-radius: 8px;
 		font-size: 13px; z-index: 2147483647; opacity: 0; transition: all 0.2s ease;
 	}
-	.pp-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-	body.pp-mode-active, body.pp-mode-active * { cursor: crosshair !important; }
-	.pp-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-	.pp-guest-dot { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--pp-brand), #9333ea); flex-shrink: 0; }
-	.pp-identity-modal { position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center; }
-	.pp-identity-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,0.55); backdrop-filter: blur(2px); }
-	.pp-identity-card { position: relative; width: 360px; background: #fff; border-radius: 12px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.35); }
-	.pp-identity-card h3 { margin: 0 0 14px; font-size: 16px; color: #0f172a; }
-	.pp-identity-card label { display: block; font-size: 12px; color: #6b7280; margin: 10px 0 4px; font-weight: 600; }
-	.pp-identity-card input { width: 100%; padding: 9px 11px; border: 1px solid #e5e7eb; border-radius: 7px; font: inherit; font-size: 14px; }
-	.pp-identity-card input:focus { outline: none; border-color: var(--pp-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pp-brand) 20%, transparent); }
-	.pp-identity-hint { font-size: 11px; color: #94a3b8; margin: 10px 0 14px; }
+	.proopin-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+	body.proopin-mode-active, body.proopin-mode-active * { cursor: crosshair !important; }
+	.proopin-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+	.proopin-guest-dot { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--proopin-brand), #9333ea); flex-shrink: 0; }
+	.proopin-identity-modal { position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center; }
+	.proopin-identity-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,0.55); backdrop-filter: blur(2px); }
+	.proopin-identity-card { position: relative; width: 360px; background: #fff; border-radius: 12px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.35); }
+	.proopin-identity-card h3 { margin: 0 0 14px; font-size: 16px; color: #0f172a; }
+	.proopin-identity-card label { display: block; font-size: 12px; color: #6b7280; margin: 10px 0 4px; font-weight: 600; }
+	.proopin-identity-card input { width: 100%; padding: 9px 11px; border: 1px solid #e5e7eb; border-radius: 7px; font: inherit; font-size: 14px; }
+	.proopin-identity-card input:focus { outline: none; border-color: var(--proopin-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--proopin-brand) 20%, transparent); }
+	.proopin-identity-hint { font-size: 11px; color: #94a3b8; margin: 10px 0 14px; }
 	`;
 
 	// ---------- root setup ----------
-	const rootEl = document.getElementById('pp-root');
+	const rootEl = document.getElementById('proopin-root');
 	if (!rootEl) return;
 	const shadow = rootEl.attachShadow({ mode: 'open' });
 
@@ -174,7 +174,7 @@
 	shadow.appendChild(styleEl);
 
 	const container = document.createElement('div');
-	container.style.setProperty('--pp-brand', CFG.settings.brand_color || '#2271b1');
+	container.style.setProperty('--proopin-brand', CFG.settings.brand_color || '#2271b1');
 	shadow.appendChild(container);
 
 	// ---------- REST helpers ----------
@@ -194,7 +194,7 @@
 	}
 
 	// ---------- guest identity (cookie) ----------
-	const COOKIE = 'pp_guest_identity';
+	const COOKIE = 'proopin_guest_identity';
 	function readCookie(name) {
 		const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
 		return m ? decodeURIComponent(m[1]) : '';
@@ -309,36 +309,17 @@
 		};
 	}
 
-	// ---------- Canvas 2D pin drawing (bakes pin into final image) ----------
-	function drawPinCircle(ctx, x, y) {
-		// Outer soft halo (slight offset for depth)
-		ctx.beginPath();
-		ctx.arc(x, y + 1, 17, 0, Math.PI * 2);
-		ctx.fillStyle = 'rgba(0,0,0,0.18)';
-		ctx.fill();
-		// White outer ring
-		ctx.beginPath();
-		ctx.arc(x, y, 16, 0, Math.PI * 2);
-		ctx.fillStyle = '#ffffff';
-		ctx.fill();
-		// Red pin body
-		ctx.beginPath();
-		ctx.arc(x, y, 12, 0, Math.PI * 2);
-		ctx.fillStyle = '#ef4444';
-		ctx.fill();
-	}
-
 	// ---------- UI: toggle button ----------
 	function buildToggle() {
 		const btn = document.createElement('button');
-		btn.className = 'pp-toggle';
+		btn.className = 'proopin-toggle';
 		btn.title = I.toggleOn;
 		btn.setAttribute('aria-label', I.toggleOn);
 		btn.innerHTML = `
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
 			</svg>
-			<span class="pp-badge" hidden>0</span>
+			<span class="proopin-badge" hidden>0</span>
 		`;
 		btn.addEventListener('click', toggleMode);
 		return btn;
@@ -347,7 +328,7 @@
 	// ---------- statusbar ----------
 	function buildStatusbar() {
 		const bar = document.createElement('div');
-		bar.className = 'pp-statusbar';
+		bar.className = 'proopin-statusbar';
 		bar.innerHTML = `<span>${I.prompt}</span> <kbd>Esc</kbd>`;
 		return bar;
 	}
@@ -358,8 +339,8 @@
 	container.appendChild(statusbar);
 
 	function updateBadge() {
-		const open = state.pins.filter(p => p.status === 'pp_open').length;
-		const badge = toggleBtn.querySelector('.pp-badge');
+		const open = state.pins.filter(p => p.status === 'proopin_open').length;
+		const badge = toggleBtn.querySelector('.proopin-badge');
 		if (open > 0) { badge.textContent = open; badge.hidden = false; } else { badge.hidden = true; }
 	}
 
@@ -374,7 +355,7 @@
 			const pos = computePinPosition(pin);
 			if (!pos) return; // unanchored — no overlay (screenshot still shows it)
 			const node = document.createElement('button');
-			node.className = 'pp-pin';
+			node.className = 'proopin-pin';
 			node.style.left = pos.x + 'px';
 			node.style.top  = pos.y + 'px';
 			node.style.setProperty('--pin-color', STATUS_COLORS[pin.status] || '#ef4444');
@@ -386,31 +367,15 @@
 	}
 
 	function computePinPosition(pin) {
-		// New anchor model (responsive)
-		if (pin.anchor_selector || pin.anchor_xpath) {
-			const el = findAnchor(pin.anchor_selector, pin.anchor_xpath, pin.anchor_text);
-			if (el) {
-				const r = el.getBoundingClientRect();
-				if (r.width > 0 && r.height > 0) {
-					return {
-						x: r.left + r.width  * (pin.offset_x_pct != null ? pin.offset_x_pct : 0.5) + window.scrollX,
-						y: r.top  + r.height * (pin.offset_y_pct != null ? pin.offset_y_pct : 0.5) + window.scrollY,
-					};
-				}
-			}
-			// Anchor missing — old pin might also still have legacy fields; fall through.
-		}
-		// Legacy pin (pre-v2): doc_x/doc_y pixels, or pin_x/pin_y as % of body
-		if (pin.doc_x != null && pin.doc_y != null && (pin.doc_x || pin.doc_y)) {
-			return { x: pin.doc_x, y: pin.doc_y };
-		}
-		if (pin.pin_x != null && pin.pin_y != null) {
-			return {
-				x: (pin.pin_x / 100) * document.body.scrollWidth + window.scrollX,
-				y: (pin.pin_y / 100) * document.body.scrollHeight + window.scrollY,
-			};
-		}
-		return null;
+		if (!pin.anchor_selector && !pin.anchor_xpath) return null;
+		const el = findAnchor(pin.anchor_selector, pin.anchor_xpath, pin.anchor_text);
+		if (!el) return null;
+		const r = el.getBoundingClientRect();
+		if (r.width <= 0 || r.height <= 0) return null;
+		return {
+			x: r.left + r.width  * (pin.offset_x_pct != null ? pin.offset_x_pct : 0.5) + window.scrollX,
+			y: r.top  + r.height * (pin.offset_y_pct != null ? pin.offset_y_pct : 0.5) + window.scrollY,
+		};
 	}
 
 	// Re-render on resize so pins track element moves (responsive by construction).
@@ -426,7 +391,7 @@
 		state.active = !state.active;
 		toggleBtn.classList.toggle('active', state.active);
 		statusbar.classList.toggle('visible', state.active);
-		document.body.classList.toggle('pp-mode-active', state.active);
+		document.body.classList.toggle('proopin-mode-active', state.active);
 		toggleBtn.title = state.active ? I.toggleOff : I.toggleOn;
 		if (state.active) {
 			// Measure the page's absolute-positioning offset (admin bar, sticky
@@ -451,25 +416,25 @@
 	function promptGuestIdentity() {
 		return new Promise((resolve) => {
 			const modal = document.createElement('div');
-			modal.className = 'pp-identity-modal';
+			modal.className = 'proopin-identity-modal';
 			modal.innerHTML = `
-				<div class="pp-identity-backdrop"></div>
-				<div class="pp-identity-card">
+				<div class="proopin-identity-backdrop"></div>
+				<div class="proopin-identity-card">
 					<h3>${escapeHtml(I.guestIntro)}</h3>
 					<label>${escapeHtml(I.guestName)}</label>
-					<input type="text" id="pp-g-name" autocomplete="name">
+					<input type="text" id="proopin-g-name" autocomplete="name">
 					<label>${escapeHtml(I.guestEmail)}</label>
-					<input type="email" id="pp-g-email" autocomplete="email">
-					<p class="pp-identity-hint">${escapeHtml(I.guestRemembered)}</p>
-					<div class="pp-actions">
-						<button class="pp-btn pp-btn-ghost" data-act="cancel">${escapeHtml(I.cancel)}</button>
-						<button class="pp-btn pp-btn-primary" data-act="ok">${escapeHtml(I.guestContinue)}</button>
+					<input type="email" id="proopin-g-email" autocomplete="email">
+					<p class="proopin-identity-hint">${escapeHtml(I.guestRemembered)}</p>
+					<div class="proopin-actions">
+						<button class="proopin-btn proopin-btn-ghost" data-act="cancel">${escapeHtml(I.cancel)}</button>
+						<button class="proopin-btn proopin-btn-primary" data-act="ok">${escapeHtml(I.guestContinue)}</button>
 					</div>
 				</div>
 			`;
 			container.appendChild(modal);
-			const nameEl  = modal.querySelector('#pp-g-name');
-			const emailEl = modal.querySelector('#pp-g-email');
+			const nameEl  = modal.querySelector('#proopin-g-name');
+			const emailEl = modal.querySelector('#proopin-g-email');
 			nameEl.focus();
 			function close(saved) { modal.remove(); resolve(saved); }
 			modal.querySelector('[data-act="cancel"]').addEventListener('click', () => close(null));
@@ -516,7 +481,7 @@
 	function openComposer(x, y, target) {
 		closeComposer();
 		const composer = document.createElement('div');
-		composer.className = 'pp-composer';
+		composer.className = 'proopin-composer';
 		const vw = window.innerWidth;
 		const vh = window.innerHeight;
 		const W = 320, H = 180;
@@ -530,18 +495,18 @@
 			? (guestState.identity ? guestState.identity.name : 'Guest')
 			: CFG.user.name;
 		const avatarHtml = CFG.user.isGuest
-			? `<div class="pp-guest-dot"></div>`
+			? `<div class="proopin-guest-dot"></div>`
 			: `<img src="${CFG.user.avatar}" alt="">`;
 		composer.innerHTML = `
-			<div class="pp-composer-user">
+			<div class="proopin-composer-user">
 				${avatarHtml}
 				<span>${I.postedBy} ${escapeHtml(who)}</span>
 			</div>
 			<textarea placeholder="${escapeHtml(I.placeholder)}" rows="3"></textarea>
-			<input type="text" name="hp" tabindex="-1" autocomplete="off" class="pp-hp" aria-hidden="true">
-			<div class="pp-actions">
-				<button class="pp-btn pp-btn-ghost" data-act="cancel">${I.cancel}</button>
-				<button class="pp-btn pp-btn-primary" data-act="submit">${I.submit}</button>
+			<input type="text" name="hp" tabindex="-1" autocomplete="off" class="proopin-hp" aria-hidden="true">
+			<div class="proopin-actions">
+				<button class="proopin-btn proopin-btn-ghost" data-act="cancel">${I.cancel}</button>
+				<button class="proopin-btn proopin-btn-primary" data-act="submit">${I.submit}</button>
 			</div>
 		`;
 		container.appendChild(composer);
@@ -552,7 +517,7 @@
 		const docX = x + window.scrollX;
 		const docY = y + window.scrollY;
 		const marker = document.createElement('button');
-		marker.className = 'pp-pin pending';
+		marker.className = 'proopin-pin pending';
 		marker.style.left = docX + 'px';
 		marker.style.top = docY + 'px';
 		marker.style.setProperty('--pin-color', '#ef4444');
@@ -651,7 +616,7 @@
 		// absolute positioning if we can't attach to the element.
 		const anchorEl = findAnchor(pc.anchor_selector, pc.anchor_xpath, pc.anchor_text);
 		const bakedPin = document.createElement('div');
-		bakedPin.id = 'pp-baked-pin';
+		bakedPin.id = 'proopin-baked-pin';
 		let anchorRestore = null;
 		if (anchorEl && anchorEl.getBoundingClientRect().width > 0) {
 			const computed = getComputedStyle(anchorEl);
@@ -696,7 +661,6 @@
 
 		let screenshot = '';
 		try {
-			console.log('[proofing-pins] capturing; viewport', vw, 'x', vh, 'scroll', sx, sy);
 			// Don't skip fonts — font fallback causes different character widths,
 			// which shifts text horizontally inside its box and misaligns the pin.
 			// Cross-origin stylesheet warnings (console noise) are acceptable cost.
@@ -706,12 +670,10 @@
 				filter: (node) => {
 					if (!node || node.nodeType !== 1) return true;
 					const id = node.id || '';
-					if (id === 'wpadminbar' || id === 'pp-root') return false;
+					if (id === 'wpadminbar' || id === 'proopin-root') return false;
 					return true;
 				},
 			});
-			console.log('[proofing-pins] full capture:', fullCanvas.width, 'x', fullCanvas.height,
-				'vs body', document.body.scrollWidth, 'x', document.body.scrollHeight);
 
 			// Crop to viewport at scroll position. CRITICAL: destination dims MUST
 			// equal source-crop dims so drawImage doesn't scale (any scale => stretch
@@ -735,9 +697,7 @@
 			}
 
 			screenshot = out.toDataURL('image/jpeg', 0.85);
-			console.log('[proofing-pins] final data URL length:', screenshot.length);
 		} catch (err) {
-			console.error('[proofing-pins] screenshot failed:', err && err.message, err);
 			toast('Screenshot failed: ' + (err && err.message ? err.message : 'unknown'));
 		} finally {
 			bakedPin.remove();
@@ -748,7 +708,7 @@
 
 		submitBtn.textContent = I.posting;
 		try {
-			const hp = pc.composer.querySelector('.pp-hp');
+			const hp = pc.composer.querySelector('.proopin-hp');
 			const payload = {
 				body,
 				page_url: CFG.pageUrl,
@@ -799,14 +759,15 @@
 		const pin = await api('GET', `pins/${pinId}`).catch(() => null);
 		if (!pin) return;
 		threadEl = document.createElement('div');
-		threadEl.className = 'pp-thread';
+		threadEl.className = 'proopin-thread';
 		threadEl.innerHTML = buildThreadHtml(pin);
 		container.appendChild(threadEl);
 
-		threadEl.querySelector('.pp-thread-close').addEventListener('click', closeThread);
-		threadEl.querySelector('[data-act="reply"]').addEventListener('click', () => submitReply(pinId));
-		const replyTa = threadEl.querySelector('.pp-thread-reply textarea');
-		replyTa.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submitReply(pinId); });
+		threadEl.querySelector('.proopin-thread-close').addEventListener('click', closeThread);
+		const replyBtn = threadEl.querySelector('[data-act="reply"]');
+		if (replyBtn) replyBtn.addEventListener('click', () => submitReply(pinId));
+		const replyTa = threadEl.querySelector('.proopin-thread-reply textarea');
+		if (replyTa) replyTa.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submitReply(pinId); });
 		if (CFG.user.canManage) {
 			const sel = threadEl.querySelector('[data-act="status"]');
 			if (sel) sel.addEventListener('change', (e) => updateStatus(pinId, e.target.value));
@@ -822,47 +783,47 @@
 
 	function buildThreadHtml(pin) {
 		const replies = (pin.replies || []).map(r => `
-			<div class="pp-msg">
-				<div class="pp-msg-head">
+			<div class="proopin-msg">
+				<div class="proopin-msg-head">
 					<img src="${r.avatar_url}" alt="">
-					<span class="pp-msg-author">${escapeHtml(r.author_name)}</span>
-					<span class="pp-msg-time">${formatTime(r.created_at)}</span>
+					<span class="proopin-msg-author">${escapeHtml(r.author_name)}</span>
+					<span class="proopin-msg-time">${formatTime(r.created_at)}</span>
 				</div>
-				<div class="pp-msg-body">${escapeHtml(r.body)}</div>
+				<div class="proopin-msg-body">${escapeHtml(r.body)}</div>
 			</div>
 		`).join('');
 		const statusSel = CFG.user.canManage ? `
-			<div class="pp-thread-status">
+			<div class="proopin-thread-status">
 				<label>Status</label>
 				<select data-act="status">
 					${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === pin.status ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
 				</select>
-				<button class="pp-btn pp-btn-ghost" data-act="delete" style="margin-left:auto;color:#ef4444">Delete</button>
+				<button class="proopin-btn proopin-btn-ghost" data-act="delete" style="margin-left:auto;color:#ef4444">Delete</button>
 			</div>` : '';
 		const replyBox = CFG.user.isGuest ? '' : `
-			<div class="pp-thread-reply">
+			<div class="proopin-thread-reply">
 				<textarea placeholder="${escapeHtml(I.replyPlaceholder)}" rows="2"></textarea>
-				<div class="pp-actions"><button class="pp-btn pp-btn-primary" data-act="reply">${I.reply}</button></div>
+				<div class="proopin-actions"><button class="proopin-btn proopin-btn-primary" data-act="reply">${I.reply}</button></div>
 			</div>`;
 		const avatarOrDot = pin.avatar_url
 			? `<img src="${pin.avatar_url}" alt="">`
-			: `<div class="pp-guest-dot" style="width:24px;height:24px;"></div>`;
+			: `<div class="proopin-guest-dot" style="width:24px;height:24px;"></div>`;
 		return `
-			<div class="pp-thread-header">
+			<div class="proopin-thread-header">
 				<div>
 					<div style="font-weight:600;font-size:14px;">${escapeHtml(pin.page_title || pin.page_url)}</div>
-					<div class="pp-thread-meta"><span class="pp-status" style="background:${STATUS_COLORS[pin.status]}">${escapeHtml(STATUS_LABELS[pin.status])}</span></div>
+					<div class="proopin-thread-meta"><span class="proopin-status" style="background:${STATUS_COLORS[pin.status]}">${escapeHtml(STATUS_LABELS[pin.status])}</span></div>
 				</div>
-				<button class="pp-thread-close" aria-label="Close">&times;</button>
+				<button class="proopin-thread-close" aria-label="Close">&times;</button>
 			</div>
-			<div class="pp-thread-body">
-				<div class="pp-msg">
-					<div class="pp-msg-head">
+			<div class="proopin-thread-body">
+				<div class="proopin-msg">
+					<div class="proopin-msg-head">
 						${avatarOrDot}
-						<span class="pp-msg-author">${escapeHtml(pin.author_name)}</span>
-						<span class="pp-msg-time">${formatTime(pin.created_at)}</span>
+						<span class="proopin-msg-author">${escapeHtml(pin.author_name)}</span>
+						<span class="proopin-msg-time">${formatTime(pin.created_at)}</span>
 					</div>
-					<div class="pp-msg-body">${escapeHtml(pin.body)}</div>
+					<div class="proopin-msg-body">${escapeHtml(pin.body)}</div>
 				</div>
 				${replies}
 			</div>
@@ -872,7 +833,7 @@
 	}
 
 	async function submitReply(pinId) {
-		const ta = threadEl.querySelector('.pp-thread-reply textarea');
+		const ta = threadEl.querySelector('.proopin-thread-reply textarea');
 		const body = ta.value.trim();
 		if (!body) return;
 		const btn = threadEl.querySelector('[data-act="reply"]');
@@ -892,7 +853,7 @@
 			if (idx >= 0) state.pins[idx] = { ...state.pins[idx], ...updated };
 			renderPins();
 			updateBadge();
-			const badge = threadEl.querySelector('.pp-status');
+			const badge = threadEl.querySelector('.proopin-status');
 			if (badge) {
 				badge.textContent = STATUS_LABELS[status];
 				badge.style.background = STATUS_COLORS[status];
@@ -923,7 +884,7 @@
 	}
 	function toast(msg) {
 		const t = document.createElement('div');
-		t.className = 'pp-toast';
+		t.className = 'proopin-toast';
 		t.textContent = msg;
 		container.appendChild(t);
 		requestAnimationFrame(() => t.classList.add('visible'));
@@ -933,20 +894,16 @@
 	// ---------- deep-link focus ----------
 	(async () => {
 		const params = new URLSearchParams(location.search);
-		const focusId = parseInt(params.get('pp_focus'), 10);
+		const focusId = parseInt(params.get('proopin_focus'), 10);
 		if (focusId) {
 			if (!state.active) await toggleMode();
 			setTimeout(() => {
-				const pin = state.pins.find(p => p.id === focusId);
-				if (pin && pin.doc_y) {
-					window.scrollTo({ top: Math.max(0, pin.doc_y - window.innerHeight / 3), behavior: 'smooth' });
-				}
 				openThread(focusId);
 			}, 300);
 		} else {
 			// load count badge even when not active
 			try {
-				const list = await api('GET', `pins?page_url=${encodeURIComponent(CFG.pageUrl)}&status=pp_open`);
+				const list = await api('GET', `pins?page_url=${encodeURIComponent(CFG.pageUrl)}&status=proopin_open`);
 				state.pins = list || [];
 				updateBadge();
 			} catch {}

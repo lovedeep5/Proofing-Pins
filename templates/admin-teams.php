@@ -14,9 +14,9 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 	$grouped[ $event['group'] ][] = $event;
 }
 ?>
-<div class="wrap pp-admin">
+<div class="wrap proopin-admin">
 	<h1><?php esc_html_e( 'Teams Integration', 'proofing-pins' ); ?></h1>
-	<p class="pp-admin-subtitle">
+	<p class="proopin-admin-subtitle">
 		<?php esc_html_e( 'Post pin activity to a Microsoft Teams channel via a Workflow webhook. Pick which events you want to be notified about.', 'proofing-pins' ); ?>
 	</p>
 
@@ -24,32 +24,32 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'proofing-pins' ); ?></p></div>
 	<?php endif; ?>
 
-	<form method="post" class="pp-ai-form">
-		<?php wp_nonce_field( 'pp_teams_save', 'pp_teams_nonce' ); ?>
+	<form method="post" class="proopin-ai-form">
+		<?php wp_nonce_field( 'proopin_teams_save', 'proopin_teams_nonce' ); ?>
 
-		<div class="pp-ai-card">
-			<label class="pp-ai-toggle">
+		<div class="proopin-ai-card">
+			<label class="proopin-ai-toggle">
 				<input type="checkbox" name="enabled" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?>>
 				<span><?php esc_html_e( 'Enable Teams notifications', 'proofing-pins' ); ?></span>
 			</label>
 		</div>
 
-		<div class="pp-ai-card">
+		<div class="proopin-ai-card">
 			<h2><?php esc_html_e( 'Webhook', 'proofing-pins' ); ?></h2>
 			<table class="form-table">
 				<tr>
-					<th><label for="pp-teams-webhook"><?php esc_html_e( 'Workflow webhook URL', 'proofing-pins' ); ?></label></th>
+					<th><label for="proopin-teams-webhook"><?php esc_html_e( 'Workflow webhook URL', 'proofing-pins' ); ?></label></th>
 					<td>
 						<input
 							type="password"
 							name="webhook_url"
-							id="pp-teams-webhook"
+							id="proopin-teams-webhook"
 							value="<?php echo esc_attr( $masked_webhook ? '__unchanged__' : '' ); ?>"
 							autocomplete="off"
 							style="width:520px"
 							placeholder="https://prod-XX.westus.logic.azure.com/workflows/…">
 						<?php if ( $masked_webhook ) : ?>
-							<span class="pp-ai-existing">
+							<span class="proopin-ai-existing">
 								<?php
 								/* translators: %s: host portion of the saved webhook URL */
 								echo esc_html( sprintf( __( 'Saved: %s', 'proofing-pins' ), $masked_webhook ) );
@@ -63,19 +63,19 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 						<p class="description">
 							<?php esc_html_e( 'In Teams: open the channel → "…" → Workflows → "Post to a channel when a webhook request is received". Paste the URL it gives you. Treat this URL like a password — anyone with it can post to your channel.', 'proofing-pins' ); ?>
 						</p>
-						<button type="button" class="button" id="pp-teams-test"><?php esc_html_e( 'Send test message', 'proofing-pins' ); ?></button>
-						<span id="pp-teams-test-result" class="pp-ai-test-result"></span>
+						<button type="button" class="button" id="proopin-teams-test"><?php esc_html_e( 'Send test message', 'proofing-pins' ); ?></button>
+						<span id="proopin-teams-test-result" class="proopin-ai-test-result"></span>
 					</td>
 				</tr>
 			</table>
 		</div>
 
-		<div class="pp-ai-card">
+		<div class="proopin-ai-card">
 			<h2><?php esc_html_e( 'Events to notify on', 'proofing-pins' ); ?></h2>
 			<?php foreach ( $grouped as $group_label => $events ) : ?>
 				<h3 style="margin-top:14px"><?php echo esc_html( $group_label ); ?></h3>
 				<?php foreach ( $events as $event ) : ?>
-					<label class="pp-ai-toggle" style="display:block;margin:6px 0">
+					<label class="proopin-ai-toggle" style="display:block;margin:6px 0">
 						<input
 							type="checkbox"
 							name="events[<?php echo esc_attr( $event['key'] ); ?>]"
@@ -88,7 +88,7 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 		</div>
 
 		<?php if ( ! empty( $settings['last_time'] ) ) : ?>
-			<div class="pp-ai-card">
+			<div class="proopin-ai-card">
 				<h2><?php esc_html_e( 'Last delivery', 'proofing-pins' ); ?></h2>
 				<p>
 					<strong>

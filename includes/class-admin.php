@@ -14,15 +14,15 @@ class Admin {
 
 	public function maybe_handle_bulk_delete(): void {
 		// Short-circuit without touching any user data.
-		if ( ! isset( $_POST['pp_bulk_action'] ) ) { return; }
+		if ( ! isset( $_POST['proopin_bulk_action'] ) ) { return; }
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		if ( $page !== 'proofing-pins' ) { return; }
 
 		// Nonce + capability BEFORE reading any POST data.
-		check_admin_referer( 'pp_bulk_delete' );
+		check_admin_referer( 'proopin_bulk_delete' );
 		if ( ! current_user_can( Capabilities::MANAGE ) ) { wp_die( esc_html__( 'Insufficient permissions.', 'proofing-pins' ) ); }
 
-		$action = sanitize_key( wp_unslash( $_POST['pp_bulk_action'] ) );
+		$action = sanitize_key( wp_unslash( $_POST['proopin_bulk_action'] ) );
 		if ( $action !== 'delete' ) { return; }
 
 		$ids     = array_map( 'intval', (array) ( $_POST['pin_ids'] ?? [] ) );
@@ -83,8 +83,8 @@ class Admin {
 			wp_die( esc_html__( 'Insufficient permissions.', 'proofing-pins' ) );
 		}
 		$saved = false;
-		if ( isset( $_POST['pp_ai_nonce'] )
-			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pp_ai_nonce'] ) ), 'pp_ai_save' ) ) {
+		if ( isset( $_POST['proopin_ai_nonce'] )
+			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_ai_nonce'] ) ), 'proopin_ai_save' ) ) {
 			AI::instance()->save_settings( [
 				'enabled'         => ! empty( $_POST['enabled'] ),
 				'auto_suggest'    => ! empty( $_POST['auto_suggest'] ),
@@ -107,21 +107,23 @@ class Admin {
 			wp_die( esc_html__( 'Insufficient permissions.', 'proofing-pins' ) );
 		}
 		$saved = false;
-		if ( isset( $_POST['pp_teams_nonce'] )
-			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['pp_teams_nonce'] ) ), 'pp_teams_save' ) ) {
+		if ( isset( $_POST['proopin_teams_nonce'] )
+			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_teams_nonce'] ) ), 'proopin_teams_save' ) ) {
 			$events = [];
 			if ( isset( $_POST['events'] ) && is_array( $_POST['events'] ) ) {
-				foreach ( $_POST['events'] as $k => $v ) {
-					$events[ sanitize_key( $k ) ] = (bool) $v;
+				$raw_events = map_deep( wp_unslash( $_POST['events'] ), 'sanitize_text_field' );
+				foreach ( $raw_events as $k => $v ) {
+					$events[ sanitize_key( $k ) ] = ! empty( $v );
 				}
 			}
 			Teams::instance()->save_settings( [
 				'enabled'       => ! empty( $_POST['enabled'] ),
-				// Webhook URL contains a SAS-style signature. sanitize_text_field() strips %XX
-				// sequences, which would break the signature on URL-encoded query params
-				// (e.g. sp=%2Ftriggers%2Fmanual%2Frun). Only unslash + trim. Scheme/URL
-				// validation happens inside Teams::save_settings().
-				'webhook_url'   => isset( $_POST['webhook_url'] ) ? trim( (string) wp_unslash( $_POST['webhook_url'] ) ) : '',
+				// Webhook URL contains a SAS-style signature. sanitize_text_field() would
+				// strip %XX sequences (e.g. sp=%2Ftriggers%2Fmanual%2Frun) and break the
+				// signature, so we use esc_url_raw instead — it preserves URL-encoded
+				// characters while stripping CRLF (%0D/%0A) injection attempts. Final
+				// scheme/host validation happens inside Teams::save_settings().
+				'webhook_url'   => isset( $_POST['webhook_url'] ) ? esc_url_raw( wp_unslash( $_POST['webhook_url'] ) ) : '',
 				'clear_webhook' => ! empty( $_POST['clear_webhook'] ),
 				'events'        => $events,
 			] );
@@ -136,15 +138,15 @@ class Admin {
 		if ( strpos( (string) $hook, 'proofing-pins' ) === false ) {
 			return;
 		}
-		wp_enqueue_style( 'pp-admin', PROOFING_PINS_PLUGIN_URL . 'assets/css/admin.css', array(), PROOFING_PINS_VERSION );
+		wp_enqueue_style( 'proopin-admin', PROOFING_PINS_PLUGIN_URL . 'assets/css/admin.css', array(), PROOFING_PINS_VERSION );
 		wp_enqueue_script(
-			'pp-admin',
+			'proopin-admin',
 			PROOFING_PINS_PLUGIN_URL . 'assets/js/admin-dashboard.js',
 			array(),
 			PROOFING_PINS_VERSION,
 			array( 'in_footer' => true, 'strategy' => 'defer' )
 		);
-		wp_localize_script( 'pp-admin', 'PP_ADMIN', [
+		wp_localize_script( 'proopin-admin', 'PROOPIN_ADMIN', [
 			'restUrl' => esc_url_raw( rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ) ),
 			'nonce'   => wp_create_nonce( 'wp_rest' ),
 			'siteUrl' => home_url( '/' ),
@@ -152,8 +154,8 @@ class Admin {
 		if ( false !== strpos( $hook, 'proofing-pins-ai' ) ) {
 			$ai_settings = AI::instance()->get_settings();
 			wp_add_inline_script(
-				'pp-admin',
-				'var PP_AI_DATA=' . wp_json_encode( [
+				'proopin-admin',
+				'var PROOPIN_AI_DATA=' . wp_json_encode( [
 					'catalog'  => AI::model_catalog(),
 					'provider' => $ai_settings['provider'] ?? '',
 					'model'    => $ai_settings['model'] ?? '',
@@ -164,15 +166,15 @@ class Admin {
 			);
 		} elseif ( false !== strpos( $hook, 'proofing-pins-teams' ) ) {
 			wp_add_inline_script(
-				'pp-admin',
-				'var PP_TEAMS_DATA=' . wp_json_encode( [
+				'proopin-admin',
+				'var PROOPIN_TEAMS_DATA=' . wp_json_encode( [
 					'restUrl' => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
 					'nonce'   => wp_create_nonce( 'wp_rest' ),
 				] ) . ';' . $this->teams_page_js(),
 				'after'
 			);
 		} else {
-			wp_add_inline_script( 'pp-admin', $this->dashboard_page_js(), 'after' );
+			wp_add_inline_script( 'proopin-admin', $this->dashboard_page_js(), 'after' );
 		}
 	}
 
@@ -187,27 +189,34 @@ class Admin {
 	}
 
 	/**
-	 * Fully delete a pin and all related artifacts:
-	 * - screenshot attachment file + DB row
-	 * - all replies (WP comments)
-	 * - all post meta
-	 * - the pin post itself
+	 * Fully delete a pin and every artifact attached to it:
+	 * - screenshot attachment row + the original file + every auto-generated
+	 *   thumbnail size on disk (handled by wp_delete_attachment with force=true)
+	 * - all replies (proopin_reply comments) + their commentmeta (handled by
+	 *   wp_delete_post(force=true) → wp_delete_comment(force=true))
+	 * - all _proopin_* post meta
+	 * - any post revisions
+	 * - any still-queued AI suggestion cron event for this pin (orphan otherwise)
+	 * - the pin post row itself
 	 */
 	public static function delete_pin_fully( int $pin_id ): bool {
 		$post = get_post( $pin_id );
 		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) { return false; }
 
-		$screenshot_id = (int) get_post_meta( $pin_id, '_pp_screenshot_id', true );
+		$screenshot_id = (int) get_post_meta( $pin_id, '_proopin_screenshot_id', true );
 		if ( $screenshot_id ) {
 			wp_delete_attachment( $screenshot_id, true );
 		}
-		// wp_delete_post(true) cascades to: post meta, comments, term rels. That covers replies.
+		// AI auto-suggest schedules a one-shot cron with this pin's id. Clear it
+		// so we don't leave an orphan cron row pointing at a deleted post.
+		wp_clear_scheduled_hook( AI::CRON_HOOK, array( $pin_id ) );
+		// wp_delete_post(true) cascades to: post meta, comments, term rels, revisions.
 		wp_delete_post( $pin_id, true );
 		return true;
 	}
 
 	public function register_settings(): void {
-		register_setting( 'pp_settings_group', 'pp_settings', [
+		register_setting( 'proopin_settings_group', 'proopin_settings', [
 			'type'              => 'array',
 			'sanitize_callback' => [ $this, 'sanitize_settings' ],
 			'default'           => [
@@ -250,25 +259,25 @@ class Admin {
 
 	private function dashboard_page_js(): string {
 		return <<<'JS'
-function pp_confirmBulk(f) {
-	var act = f.pp_bulk_action && f.pp_bulk_action.value;
+function proopin_confirmBulk(f) {
+	var act = f.proopin_bulk_action && f.proopin_bulk_action.value;
 	if (!act) { alert('Pick a bulk action first.'); return false; }
-	var n = f.querySelectorAll('.pp-row-check:checked').length;
+	var n = f.querySelectorAll('.proopin-row-check:checked').length;
 	if (!n) { alert('Select at least one pin.'); return false; }
 	return confirm('Delete ' + n + ' pin(s) — screenshots and replies will be removed. This cannot be undone.');
 }
 (function(){
-	const all = document.getElementById('pp-check-all');
-	const boxes = document.querySelectorAll('.pp-row-check');
-	const sel = document.querySelector('.pp-bulk-selected');
+	const all = document.getElementById('proopin-check-all');
+	const boxes = document.querySelectorAll('.proopin-row-check');
+	const sel = document.querySelector('.proopin-bulk-selected');
 	function updateCount() {
 		if (!sel) return;
-		const n = document.querySelectorAll('.pp-row-check:checked').length;
+		const n = document.querySelectorAll('.proopin-row-check:checked').length;
 		sel.textContent = n + ' selected';
 	}
 	if (all) all.addEventListener('change', () => { boxes.forEach(b => b.checked = all.checked); updateCount(); });
 	boxes.forEach(b => b.addEventListener('change', updateCount));
-	document.querySelectorAll('.pp-list tbody tr[data-detail-url]').forEach(tr => {
+	document.querySelectorAll('.proopin-list tbody tr[data-detail-url]').forEach(tr => {
 		tr.addEventListener('click', (e) => {
 			if (e.target.closest('input,button,a,label')) return;
 			location.href = tr.getAttribute('data-detail-url');
@@ -282,16 +291,16 @@ JS;
 	private function ai_page_js(): string {
 		return <<<'JS'
 (function(){
-	const curated = PP_AI_DATA.catalog;
-	const current = { provider: PP_AI_DATA.provider, model: PP_AI_DATA.model };
-	const REST    = PP_AI_DATA.restUrl;
-	const NONCE   = PP_AI_DATA.nonce;
+	const curated = PROOPIN_AI_DATA.catalog;
+	const current = { provider: PROOPIN_AI_DATA.provider, model: PROOPIN_AI_DATA.model };
+	const REST    = PROOPIN_AI_DATA.restUrl;
+	const NONCE   = PROOPIN_AI_DATA.nonce;
 
-	const providerSel = document.getElementById('pp-ai-provider');
-	const modelSel    = document.getElementById('pp-ai-model');
-	const refreshBtn  = document.getElementById('pp-ai-refresh-models');
-	const keyInput    = document.getElementById('pp-ai-key');
-	const hint        = document.getElementById('pp-ai-model-hint');
+	const providerSel = document.getElementById('proopin-ai-provider');
+	const modelSel    = document.getElementById('proopin-ai-model');
+	const refreshBtn  = document.getElementById('proopin-ai-refresh-models');
+	const keyInput    = document.getElementById('proopin-ai-key');
+	const hint        = document.getElementById('proopin-ai-model-hint');
 
 	function buildOptions(list, keepModel) {
 		modelSel.innerHTML = '';
@@ -355,10 +364,10 @@ JS;
 		fetchModels(providerSel.value, { force: true, keepModel: modelSel.value });
 	});
 
-	document.getElementById('pp-ai-test').addEventListener('click', async () => {
-		const out = document.getElementById('pp-ai-test-result');
+	document.getElementById('proopin-ai-test').addEventListener('click', async () => {
+		const out = document.getElementById('proopin-ai-test-result');
 		out.textContent = 'Testing…';
-		out.className = 'pp-ai-test-result';
+		out.className = 'proopin-ai-test-result';
 		try {
 			const res = await fetch(REST + 'ai/test', {
 				method: 'POST',
@@ -369,14 +378,14 @@ JS;
 			const json = await res.json();
 			if (json.ok) {
 				out.textContent = '✓ ' + (json.message || 'OK');
-				out.className = 'pp-ai-test-result ok';
+				out.className = 'proopin-ai-test-result ok';
 			} else {
 				out.textContent = '✗ ' + (json.message || 'Failed');
-				out.className = 'pp-ai-test-result err';
+				out.className = 'proopin-ai-test-result err';
 			}
 		} catch (err) {
 			out.textContent = '✗ ' + err.message;
-			out.className = 'pp-ai-test-result err';
+			out.className = 'proopin-ai-test-result err';
 		}
 	});
 })();
@@ -386,14 +395,14 @@ JS;
 	private function teams_page_js(): string {
 		return <<<'JS'
 (function(){
-	const REST  = PP_TEAMS_DATA.restUrl;
-	const NONCE = PP_TEAMS_DATA.nonce;
-	const btn   = document.getElementById('pp-teams-test');
-	const out   = document.getElementById('pp-teams-test-result');
+	const REST  = PROOPIN_TEAMS_DATA.restUrl;
+	const NONCE = PROOPIN_TEAMS_DATA.nonce;
+	const btn   = document.getElementById('proopin-teams-test');
+	const out   = document.getElementById('proopin-teams-test-result');
 	if (!btn) return;
 	btn.addEventListener('click', async () => {
 		out.textContent = 'Sending…';
-		out.className = 'pp-ai-test-result';
+		out.className = 'proopin-ai-test-result';
 		btn.disabled = true;
 		try {
 			const res = await fetch(REST + 'teams/test', {
@@ -404,14 +413,14 @@ JS;
 			const json = await res.json();
 			if (json.ok) {
 				out.textContent = '✓ ' + (json.message || 'Sent');
-				out.className = 'pp-ai-test-result ok';
+				out.className = 'proopin-ai-test-result ok';
 			} else {
 				out.textContent = '✗ ' + (json.message || 'Failed');
-				out.className = 'pp-ai-test-result err';
+				out.className = 'proopin-ai-test-result err';
 			}
 		} catch (err) {
 			out.textContent = '✗ ' + err.message;
-			out.className = 'pp-ai-test-result err';
+			out.className = 'proopin-ai-test-result err';
 		} finally {
 			btn.disabled = false;
 		}

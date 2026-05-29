@@ -15,7 +15,7 @@ class Rest_API {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'list_pins' ],
-				'permission_callback' => [ $this, 'can_create' ],
+				'permission_callback' => [ $this, 'can_list' ],
 				'args'                => [
 					'page_url' => [ 'type' => 'string', 'required' => false ],
 					'status'   => [ 'type' => 'string', 'required' => false ],
@@ -33,7 +33,7 @@ class Rest_API {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_pin' ],
-				'permission_callback' => [ $this, 'can_create' ],
+				'permission_callback' => [ $this, 'can_view_pin' ],
 			],
 			[
 				'methods'             => 'PATCH',
@@ -50,7 +50,7 @@ class Rest_API {
 		register_rest_route( $ns, '/pins/(?P<id>\d+)/replies', [
 			'methods'             => 'POST',
 			'callback'            => [ $this, 'add_reply' ],
-			'permission_callback' => [ $this, 'can_create' ],
+			'permission_callback' => [ $this, 'can_reply' ],
 		] );
 
 		register_rest_route( $ns, '/pins/(?P<id>\d+)/ai-suggest', [
@@ -103,11 +103,11 @@ class Rest_API {
 		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
-		$op = get_post_meta( $post->ID, '_pp_ai_change_op', true );
+		$op = get_post_meta( $post->ID, '_proopin_ai_change_op', true );
 		if ( ! is_array( $op ) || ( $op['op'] ?? '' ) !== 'update_widget_setting' ) {
 			return new \WP_REST_Response( [ 'code' => 'no_op', 'message' => 'No applicable change proposal for this pin.' ], 400 );
 		}
-		$page_id     = (int) get_post_meta( $post->ID, '_pp_elementor_page_id', true );
+		$page_id     = (int) get_post_meta( $post->ID, '_proopin_elementor_page_id', true );
 		$widget_type = (string) $op['widget_type'];
 		$widget_id   = (string) $op['widget_id'];
 		$setting_key = (string) $op['setting_key'];
@@ -119,13 +119,13 @@ class Rest_API {
 		if ( is_wp_error( $prev ) ) {
 			return new \WP_REST_Response( [ 'code' => $prev->get_error_code(), 'message' => $prev->get_error_message() ], 400 );
 		}
-		update_post_meta( $post->ID, '_pp_applied_at', current_time( 'mysql', true ) );
-		update_post_meta( $post->ID, '_pp_applied_op', $op );
-		update_post_meta( $post->ID, '_pp_applied_prev_value', $prev );
-		update_post_meta( $post->ID, '_pp_applied_by', get_current_user_id() );
+		update_post_meta( $post->ID, '_proopin_applied_at', current_time( 'mysql', true ) );
+		update_post_meta( $post->ID, '_proopin_applied_op', $op );
+		update_post_meta( $post->ID, '_proopin_applied_prev_value', $prev );
+		update_post_meta( $post->ID, '_proopin_applied_by', get_current_user_id() );
 		return rest_ensure_response( [
 			'ok'         => true,
-			'applied_at' => get_post_meta( $post->ID, '_pp_applied_at', true ),
+			'applied_at' => get_post_meta( $post->ID, '_proopin_applied_at', true ),
 			'prev_value' => $prev,
 		] );
 	}
@@ -135,20 +135,20 @@ class Rest_API {
 		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_REST_Response( [ 'code' => 'not_found' ], 404 );
 		}
-		$applied_op = get_post_meta( $post->ID, '_pp_applied_op', true );
-		$prev       = get_post_meta( $post->ID, '_pp_applied_prev_value', true );
+		$applied_op = get_post_meta( $post->ID, '_proopin_applied_op', true );
+		$prev       = get_post_meta( $post->ID, '_proopin_applied_prev_value', true );
 		if ( ! is_array( $applied_op ) ) {
 			return new \WP_REST_Response( [ 'code' => 'not_applied', 'message' => 'This pin was not previously applied.' ], 400 );
 		}
-		$page_id = (int) get_post_meta( $post->ID, '_pp_elementor_page_id', true );
+		$page_id = (int) get_post_meta( $post->ID, '_proopin_elementor_page_id', true );
 		$ok      = Elementor_Writer::write_raw( $page_id, (string) $applied_op['widget_id'], (string) $applied_op['setting_key'], $prev );
 		if ( ! $ok ) {
 			return new \WP_REST_Response( [ 'code' => 'revert_failed', 'message' => 'Widget no longer present — revert could not be applied.' ], 400 );
 		}
-		delete_post_meta( $post->ID, '_pp_applied_at' );
-		delete_post_meta( $post->ID, '_pp_applied_op' );
-		delete_post_meta( $post->ID, '_pp_applied_prev_value' );
-		delete_post_meta( $post->ID, '_pp_applied_by' );
+		delete_post_meta( $post->ID, '_proopin_applied_at' );
+		delete_post_meta( $post->ID, '_proopin_applied_op' );
+		delete_post_meta( $post->ID, '_proopin_applied_prev_value' );
+		delete_post_meta( $post->ID, '_proopin_applied_by' );
 		return rest_ensure_response( [ 'ok' => true, 'reverted' => true ] );
 	}
 
@@ -190,10 +190,43 @@ class Rest_API {
 		return rest_ensure_response( [ 'ok' => true, 'message' => $result ] );
 	}
 
+	/**
+	 * Anyone allowed to create pins is allowed to *attempt* a list call. The
+	 * callback (list_pins) further scopes results so non-managers only ever see
+	 * pins for the page they explicitly requested, never the global pool.
+	 */
+	public function can_list(): bool {
+		return $this->can_create();
+	}
+
 	public function can_create(): bool {
 		if ( is_user_logged_in() && current_user_can( Capabilities::CREATE ) ) { return true; }
-		$settings = get_option( 'pp_settings', [] );
+		$settings = get_option( 'proopin_settings', [] );
 		return ! empty( $settings['guest_pins_enabled'] );
+	}
+
+	/**
+	 * GET /pins/{id} — caller must be allowed to see THIS pin specifically.
+	 * Managers see everything; pin authors see their own; everyone else 403.
+	 * (Guest-authored pins have post_author=0, so guests cannot read pins back
+	 * by id even when guest pins are enabled — list endpoint scoped by page is
+	 * the only path guests have into pin data.)
+	 */
+	public function can_view_pin( \WP_REST_Request $req ): bool {
+		if ( current_user_can( Capabilities::MANAGE ) ) { return true; }
+		$pin = get_post( (int) $req['id'] );
+		if ( ! $pin || $pin->post_type !== PROOFING_PINS_POST_TYPE ) { return false; }
+		if ( ! is_user_logged_in() ) { return false; }
+		return (int) $pin->post_author === get_current_user_id();
+	}
+
+	/**
+	 * POST /pins/{id}/replies — guests are NOT allowed to reply, even when
+	 * guest pins are enabled (mirrors the frontend, which hides reply UI for
+	 * guests). Only logged-in users with the CREATE cap may reply.
+	 */
+	public function can_reply(): bool {
+		return is_user_logged_in() && current_user_can( Capabilities::CREATE );
 	}
 
 	/**
@@ -252,15 +285,34 @@ class Rest_API {
 		return 0;
 	}
 
+	/**
+	 * Best-effort client IP used for guest rate-limiting and the
+	 * `_proopin_guest_ip_hash` audit field.
+	 *
+	 * Security: only REMOTE_ADDR is trusted by default. Headers like
+	 * X-Forwarded-For are set by the client and can be spoofed on every
+	 * request, which would let an attacker bypass the per-IP rate limit and
+	 * create unbounded transient rows in wp_options (one per fake IP). Sites
+	 * behind a trusted reverse proxy (Cloudflare, AWS ALB, nginx, etc.) can
+	 * hook the `proofingpins_guest_ip` filter to return the real client IP
+	 * from the proxy-specific header they actually trust on their stack.
+	 * The returned value must validate as an IP address; otherwise the
+	 * `0.0.0.0` fallback is used and all unrecognised clients share one
+	 * rate-limit bucket.
+	 */
 	private function guest_ip(): string {
-		$ip = isset( $_SERVER['REMOTE_ADDR'] )
+		$remote = isset( $_SERVER['REMOTE_ADDR'] )
 			? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
 			: '';
-		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$fwd = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			$ip  = trim( $fwd[0] );
-		}
-		return filter_var( $ip, FILTER_VALIDATE_IP ) ?: '0.0.0.0';
+		/**
+		 * Filters the IP used for guest rate-limiting and abuse tracking.
+		 *
+		 * @param string $remote The unvalidated REMOTE_ADDR. Hook implementations
+		 *                       may ignore this and read a different $_SERVER key.
+		 */
+		$ip    = (string) apply_filters( 'proofingpins_guest_ip', $remote );
+		$valid = filter_var( $ip, FILTER_VALIDATE_IP );
+		return $valid ?: '0.0.0.0';
 	}
 
 	public function can_manage(): bool {
@@ -268,6 +320,19 @@ class Rest_API {
 	}
 
 	public function list_pins( \WP_REST_Request $req ): \WP_REST_Response {
+		$can_manage = current_user_can( Capabilities::MANAGE );
+
+		// Non-managers (incl. guests and creators) MUST scope the listing to a
+		// single page. Without this, the endpoint would expose the full pool of
+		// pins across the site — sensitive data leak flagged in WP.org review.
+		$page_url = $req->get_param( 'page_url' );
+		if ( ! $can_manage && ! $page_url ) {
+			return new \WP_REST_Response(
+				[ 'code' => 'page_url_required', 'message' => 'page_url is required.' ],
+				400
+			);
+		}
+
 		$args = [
 			'post_type'      => PROOFING_PINS_POST_TYPE,
 			'post_status'    => CPT::all_statuses(),
@@ -275,14 +340,24 @@ class Rest_API {
 			'orderby'        => 'date',
 			'order'          => 'DESC',
 		];
-		$page_url = $req->get_param( 'page_url' );
 		if ( $page_url ) {
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded result (per_page<=100), single-key lookup.
-			$args['meta_query'] = array( array( 'key' => '_pp_page_url', 'value' => $page_url ) );
+			$args['meta_query'] = array( array( 'key' => '_proopin_page_url', 'value' => $page_url ) );
 		}
 		$status = $req->get_param( 'status' );
 		if ( $status && in_array( $status, CPT::all_statuses(), true ) ) {
 			$args['post_status'] = $status;
+		}
+		// Non-managers never see archived pins — those are internal triage state.
+		if ( ! $can_manage ) {
+			$visible = array_values( array_diff( CPT::all_statuses(), [ CPT::STATUS_ARCHIVED ] ) );
+			if ( ! empty( $args['post_status'] ) && is_string( $args['post_status'] ) ) {
+				if ( ! in_array( $args['post_status'], $visible, true ) ) {
+					return rest_ensure_response( [] );
+				}
+			} else {
+				$args['post_status'] = $visible;
+			}
 		}
 		$q    = new \WP_Query( $args );
 		$out  = array_map( [ $this, 'format_pin' ], $q->posts );
@@ -300,23 +375,10 @@ class Rest_API {
 		$guest_name  = '';
 		$guest_email = '';
 		if ( $is_guest ) {
-			// Honeypot: bots tend to fill all fields. Silent reject.
-			if ( ! empty( $params['hp'] ) ) {
-				return new \WP_REST_Response( [ 'code' => 'rejected' ], 400 );
-			}
-			// Per-IP rate limit.
-			$settings = get_option( 'pp_settings', [] );
-			$limit    = max( 1, (int) ( $settings['guest_rate_limit'] ?? 5 ) );
-			$ip_key   = 'pp_guest_rl_' . md5( $this->guest_ip() );
-			$count    = (int) get_transient( $ip_key );
-			if ( $count >= $limit ) {
-				return new \WP_REST_Response( [ 'code' => 'rate_limited', 'message' => 'Too many pins from your address. Please try again later.' ], 429 );
-			}
-			set_transient( $ip_key, $count + 1, HOUR_IN_SECONDS );
-
-			$guest_name  = sanitize_text_field( (string) ( $params['guest_name'] ?? '' ) );
-			$guest_email = sanitize_email( (string) ( $params['guest_email'] ?? '' ) );
-			if ( $guest_name === '' ) { $guest_name = __( 'Guest', 'proofing-pins' ); }
+			$guard = $this->guard_guest_request( $params );
+			if ( $guard instanceof \WP_REST_Response ) { return $guard; }
+			$guest_name  = $guard['name'];
+			$guest_email = $guard['email'];
 		}
 
 		$page_url = isset( $params['page_url'] ) ? esc_url_raw( $params['page_url'] ) : '';
@@ -344,30 +406,30 @@ class Rest_API {
 		$offset_y_pct    = isset( $params['offset_y_pct'] ) ? max( 0.0, min( 1.0, (float) $params['offset_y_pct'] ) ) : 0.5;
 
 		$meta = [
-			'_pp_page_url'         => $page_url,
-			'_pp_page_title'       => isset( $params['page_title'] ) ? sanitize_text_field( $params['page_title'] ) : '',
+			'_proopin_page_url'         => $page_url,
+			'_proopin_page_title'       => isset( $params['page_title'] ) ? sanitize_text_field( $params['page_title'] ) : '',
 			// v2 anchor model
-			'_pp_anchor_selector'  => $anchor_selector,
-			'_pp_anchor_xpath'     => $anchor_xpath,
-			'_pp_anchor_text'      => $anchor_text,
-			'_pp_offset_x_pct'     => $offset_x_pct,
-			'_pp_offset_y_pct'     => $offset_y_pct,
+			'_proopin_anchor_selector'  => $anchor_selector,
+			'_proopin_anchor_xpath'     => $anchor_xpath,
+			'_proopin_anchor_text'      => $anchor_text,
+			'_proopin_offset_x_pct'     => $offset_x_pct,
+			'_proopin_offset_y_pct'     => $offset_y_pct,
 			// Context / debug
-			'_pp_scroll_y_pct'     => isset( $params['scroll_y_pct'] ) ? (float) $params['scroll_y_pct'] : 0,
-			'_pp_element_html'     => $element_html,
-			'_pp_element_tag'      => isset( $params['element_tag'] ) ? sanitize_key( $params['element_tag'] ) : '',
-			'_pp_viewport_w'       => isset( $params['viewport_w'] ) ? (int) $params['viewport_w'] : 0,
-			'_pp_viewport_h'       => isset( $params['viewport_h'] ) ? (int) $params['viewport_h'] : 0,
-			'_pp_user_agent'       => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 500 ) : '',
-			'_pp_device_type'      => isset( $params['device_type'] ) ? sanitize_text_field( $params['device_type'] ) : 'desktop',
-			'_pp_is_guest'         => $is_guest ? 1 : 0,
-			'_pp_guest_name'       => $is_guest ? $guest_name : '',
-			'_pp_guest_email'      => $is_guest ? $guest_email : '',
-			'_pp_guest_ip_hash'    => $is_guest ? substr( md5( $this->guest_ip() ), 0, 16 ) : '',
+			'_proopin_scroll_y_pct'     => isset( $params['scroll_y_pct'] ) ? (float) $params['scroll_y_pct'] : 0,
+			'_proopin_element_html'     => $element_html,
+			'_proopin_element_tag'      => isset( $params['element_tag'] ) ? sanitize_key( $params['element_tag'] ) : '',
+			'_proopin_viewport_w'       => isset( $params['viewport_w'] ) ? (int) $params['viewport_w'] : 0,
+			'_proopin_viewport_h'       => isset( $params['viewport_h'] ) ? (int) $params['viewport_h'] : 0,
+			'_proopin_user_agent'       => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 500 ) : '',
+			'_proopin_device_type'      => isset( $params['device_type'] ) ? sanitize_text_field( $params['device_type'] ) : 'desktop',
+			'_proopin_is_guest'         => $is_guest ? 1 : 0,
+			'_proopin_guest_name'       => $is_guest ? $guest_name : '',
+			'_proopin_guest_email'      => $is_guest ? $guest_email : '',
+			'_proopin_guest_ip_hash'    => $is_guest ? substr( md5( $this->guest_ip() ), 0, 16 ) : '',
 			// Elementor detection (empty strings when not an Elementor page)
-			'_pp_elementor_widget_type' => $elementor['widget_type'] ?? '',
-			'_pp_elementor_widget_id'   => $elementor['widget_id']   ?? '',
-			'_pp_elementor_page_id'     => $elementor['page_id']     ?? 0,
+			'_proopin_elementor_widget_type' => $elementor['widget_type'] ?? '',
+			'_proopin_elementor_widget_id'   => $elementor['widget_id']   ?? '',
+			'_proopin_elementor_page_id'     => $elementor['page_id']     ?? 0,
 		];
 
 		$attachment_id = 0;
@@ -375,7 +437,7 @@ class Rest_API {
 			$attachment_id = Screenshot::save_from_data_url( (string) $params['screenshot_data_url'], get_current_user_id() );
 		}
 		if ( $attachment_id ) {
-			$meta['_pp_screenshot_id'] = $attachment_id;
+			$meta['_proopin_screenshot_id'] = $attachment_id;
 		}
 
 		$excerpt = wp_trim_words( $body, 10, '…' );
@@ -405,6 +467,37 @@ class Rest_API {
 		do_action( 'proofingpins_pin_created', (int) $post_id );
 
 		return rest_ensure_response( $this->format_pin( get_post( $post_id ) ) );
+	}
+
+	/**
+	 * Shared honeypot + per-IP rate limit + identity sanitization for any
+	 * write request made by a logged-out visitor. Returns the normalized
+	 * guest identity on success, or a WP_REST_Response that the caller
+	 * should return verbatim on failure. Centralized so create_pin and
+	 * add_reply apply the same protections — the WP.org review flagged
+	 * /pins/{id}/replies for skipping these checks.
+	 */
+	private function guard_guest_request( array $params ) {
+		// Honeypot: bots tend to fill all fields. Silent reject.
+		if ( ! empty( $params['hp'] ) ) {
+			return new \WP_REST_Response( [ 'code' => 'rejected' ], 400 );
+		}
+		$settings = get_option( 'proopin_settings', [] );
+		$limit    = max( 1, (int) ( $settings['guest_rate_limit'] ?? 5 ) );
+		$ip_key   = 'proopin_guest_rl_' . md5( $this->guest_ip() );
+		$count    = (int) get_transient( $ip_key );
+		if ( $count >= $limit ) {
+			return new \WP_REST_Response(
+				[ 'code' => 'rate_limited', 'message' => 'Too many submissions from your address. Please try again later.' ],
+				429
+			);
+		}
+		set_transient( $ip_key, $count + 1, HOUR_IN_SECONDS );
+
+		$name  = sanitize_text_field( (string) ( $params['guest_name'] ?? '' ) );
+		$email = sanitize_email( (string) ( $params['guest_email'] ?? '' ) );
+		if ( $name === '' ) { $name = __( 'Guest', 'proofing-pins' ); }
+		return [ 'name' => $name, 'email' => $email ];
 	}
 
 	public function get_pin( \WP_REST_Request $req ): \WP_REST_Response {
@@ -459,7 +552,7 @@ class Rest_API {
 			'comment_content'      => $body,
 			'user_id'              => $user->ID,
 			'comment_approved'     => 1,
-			'comment_type'         => 'pp_reply',
+			'comment_type'         => 'proopin_reply',
 		] );
 		if ( ! $comment_id ) {
 			return new \WP_REST_Response( [ 'code' => 'insert_failed' ], 500 );
@@ -468,12 +561,12 @@ class Rest_API {
 	}
 
 	private function format_pin( $post, bool $include_replies = false ): array {
-		$screenshot_id  = (int) get_post_meta( $post->ID, '_pp_screenshot_id', true );
+		$screenshot_id  = (int) get_post_meta( $post->ID, '_proopin_screenshot_id', true );
 		$screenshot_url = $screenshot_id ? wp_get_attachment_url( $screenshot_id ) : '';
 		$author         = get_userdata( $post->post_author );
-		$is_guest       = (int) get_post_meta( $post->ID, '_pp_is_guest', true ) === 1;
-		$guest_name     = (string) get_post_meta( $post->ID, '_pp_guest_name', true );
-		$guest_email    = (string) get_post_meta( $post->ID, '_pp_guest_email', true );
+		$is_guest       = (int) get_post_meta( $post->ID, '_proopin_is_guest', true ) === 1;
+		$guest_name     = (string) get_post_meta( $post->ID, '_proopin_guest_name', true );
+		$guest_email    = (string) get_post_meta( $post->ID, '_proopin_guest_email', true );
 		$author_name    = $author ? $author->display_name : ( $guest_name ?: __( 'Guest', 'proofing-pins' ) );
 		$avatar_url     = $author
 			? get_avatar_url( $post->post_author, [ 'size' => 48 ] )
@@ -486,42 +579,37 @@ class Rest_API {
 			'author_name'      => $author_name,
 			'avatar_url'       => $avatar_url,
 			'is_guest'         => $is_guest,
-			'page_url'         => get_post_meta( $post->ID, '_pp_page_url', true ),
-			'page_title'       => get_post_meta( $post->ID, '_pp_page_title', true ),
+			'page_url'         => get_post_meta( $post->ID, '_proopin_page_url', true ),
+			'page_title'       => get_post_meta( $post->ID, '_proopin_page_title', true ),
 			// v2 anchor model
-			'anchor_selector'  => get_post_meta( $post->ID, '_pp_anchor_selector', true ),
-			'anchor_xpath'     => get_post_meta( $post->ID, '_pp_anchor_xpath', true ),
-			'anchor_text'      => get_post_meta( $post->ID, '_pp_anchor_text', true ),
-			'offset_x_pct'     => (float) get_post_meta( $post->ID, '_pp_offset_x_pct', true ),
-			'offset_y_pct'     => (float) get_post_meta( $post->ID, '_pp_offset_y_pct', true ),
-			// Legacy (for old pins that predate v2 — widget falls back to these)
-			'pin_x'            => (float) get_post_meta( $post->ID, '_pp_pin_x', true ),
-			'pin_y'            => (float) get_post_meta( $post->ID, '_pp_pin_y', true ),
-			'doc_x'            => (float) get_post_meta( $post->ID, '_pp_doc_x', true ),
-			'doc_y'            => (float) get_post_meta( $post->ID, '_pp_doc_y', true ),
-			'scroll_y_pct'     => (float) get_post_meta( $post->ID, '_pp_scroll_y_pct', true ),
-			'element_selector' => get_post_meta( $post->ID, '_pp_anchor_selector', true ) ?: get_post_meta( $post->ID, '_pp_element_selector', true ),
-			'viewport_w'       => (int) get_post_meta( $post->ID, '_pp_viewport_w', true ),
-			'viewport_h'       => (int) get_post_meta( $post->ID, '_pp_viewport_h', true ),
-			'device_type'      => get_post_meta( $post->ID, '_pp_device_type', true ),
-			'element_tag'      => get_post_meta( $post->ID, '_pp_element_tag', true ),
+			'anchor_selector'  => get_post_meta( $post->ID, '_proopin_anchor_selector', true ),
+			'anchor_xpath'     => get_post_meta( $post->ID, '_proopin_anchor_xpath', true ),
+			'anchor_text'      => get_post_meta( $post->ID, '_proopin_anchor_text', true ),
+			'offset_x_pct'     => (float) get_post_meta( $post->ID, '_proopin_offset_x_pct', true ),
+			'offset_y_pct'     => (float) get_post_meta( $post->ID, '_proopin_offset_y_pct', true ),
+			'scroll_y_pct'     => (float) get_post_meta( $post->ID, '_proopin_scroll_y_pct', true ),
+			'element_selector' => get_post_meta( $post->ID, '_proopin_anchor_selector', true ),
+			'viewport_w'       => (int) get_post_meta( $post->ID, '_proopin_viewport_w', true ),
+			'viewport_h'       => (int) get_post_meta( $post->ID, '_proopin_viewport_h', true ),
+			'device_type'      => get_post_meta( $post->ID, '_proopin_device_type', true ),
+			'element_tag'      => get_post_meta( $post->ID, '_proopin_element_tag', true ),
 			'screenshot_url'   => $screenshot_url,
 			'created_at'       => mysql_to_rfc3339( $post->post_date_gmt ),
 			'reply_count'      => (int) get_comments_number( $post->ID ),
-			'ai_status'        => get_post_meta( $post->ID, '_pp_ai_status', true ),
-			'ai_suggestion'    => get_post_meta( $post->ID, '_pp_ai_suggestion', true ),
+			'ai_status'        => get_post_meta( $post->ID, '_proopin_ai_status', true ),
+			'ai_suggestion'    => get_post_meta( $post->ID, '_proopin_ai_suggestion', true ),
 			// Elementor context + change proposal
 			'elementor' => [
-				'widget_type' => get_post_meta( $post->ID, '_pp_elementor_widget_type', true ),
-				'widget_id'   => get_post_meta( $post->ID, '_pp_elementor_widget_id', true ),
-				'page_id'     => (int) get_post_meta( $post->ID, '_pp_elementor_page_id', true ),
+				'widget_type' => get_post_meta( $post->ID, '_proopin_elementor_widget_type', true ),
+				'widget_id'   => get_post_meta( $post->ID, '_proopin_elementor_widget_id', true ),
+				'page_id'     => (int) get_post_meta( $post->ID, '_proopin_elementor_page_id', true ),
 			],
-			'change_op'        => get_post_meta( $post->ID, '_pp_ai_change_op', true ),
-			'applied_at'       => get_post_meta( $post->ID, '_pp_applied_at', true ),
-			'applied_op'       => get_post_meta( $post->ID, '_pp_applied_op', true ),
+			'change_op'        => get_post_meta( $post->ID, '_proopin_ai_change_op', true ),
+			'applied_at'       => get_post_meta( $post->ID, '_proopin_applied_at', true ),
+			'applied_op'       => get_post_meta( $post->ID, '_proopin_applied_op', true ),
 		];
 		if ( $include_replies ) {
-			$comments = get_comments( [ 'post_id' => $post->ID, 'type' => 'pp_reply', 'status' => 'approve', 'order' => 'ASC' ] );
+			$comments = get_comments( [ 'post_id' => $post->ID, 'type' => 'proopin_reply', 'status' => 'approve', 'order' => 'ASC' ] );
 			$data['replies'] = array_map( [ $this, 'format_reply' ], $comments );
 		}
 		return $data;

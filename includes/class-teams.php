@@ -4,7 +4,7 @@ namespace ProofingPins;
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class Teams {
-	public const OPTION_KEY = 'pp_teams_settings';
+	public const OPTION_KEY = 'proopin_teams_settings';
 
 	public const EVENT_PIN_CREATED = 'pin_created';
 	public const EVENT_REPLY_ADDED = 'reply_added';
@@ -89,7 +89,7 @@ class Teams {
 	// ---------- encryption (mirrors AI class — AUTH_KEY-seeded AES-256-CBC) ----------
 	private function key(): string {
 		$seed = defined( 'AUTH_KEY' ) && AUTH_KEY ? AUTH_KEY : wp_salt( 'auth' );
-		return hash( 'sha256', 'pp-teams|' . $seed, true );
+		return hash( 'sha256', 'proopin-teams|' . $seed, true );
 	}
 
 	private function encrypt( string $plain ): string {
@@ -122,7 +122,7 @@ class Teams {
 	}
 
 	public function on_comment_inserted( int $comment_id, $comment ): void {
-		if ( ! $comment || $comment->comment_type !== 'pp_reply' ) { return; }
+		if ( ! $comment || $comment->comment_type !== 'proopin_reply' ) { return; }
 		$s = $this->get_settings();
 		if ( empty( $s['enabled'] ) || empty( $s['events'][ self::EVENT_REPLY_ADDED ] ) ) { return; }
 		$post = get_post( (int) $comment->comment_post_ID );
@@ -138,7 +138,7 @@ class Teams {
 		if ( empty( $s['enabled'] ) ) { return; }
 		$event_key = self::EVENT_STATUS_PREFIX . $new;
 		if ( empty( $s['events'][ $event_key ] ) ) { return; }
-		// Skip the synthetic "draft → pp_open" insert transition (already covered by pin_created).
+		// Skip the synthetic "draft → proopin_open" insert transition (already covered by pin_created).
 		if ( $old === 'new' || $old === 'auto-draft' || $old === 'draft' ) { return; }
 		$this->send_card( $this->build_status_card( $post, $old, $new ) );
 	}
@@ -213,6 +213,7 @@ class Teams {
 
 	private function build_reply_card( $post, $comment ): array {
 		return $this->build_card_payload(
+			/* translators: %d: pin (post) ID */
 			sprintf( __( 'New reply on pin #%d', 'proofing-pins' ), $post->ID ),
 			(string) $comment->comment_content,
 			$this->common_facts( $post, [
@@ -225,6 +226,7 @@ class Teams {
 
 	private function build_status_card( $post, string $old, string $new ): array {
 		return $this->build_card_payload(
+			/* translators: 1: pin (post) ID, 2: new status label (e.g. "Resolved") */
 			sprintf( __( 'Pin #%1$d → %2$s', 'proofing-pins' ), $post->ID, self::status_label( $new ) ),
 			$post->post_content,
 			$this->common_facts( $post, [
@@ -237,10 +239,10 @@ class Teams {
 	}
 
 	private function common_facts( $post, array $extra = [] ): array {
-		$page_url = (string) get_post_meta( $post->ID, '_pp_page_url', true );
-		$is_guest = (int) get_post_meta( $post->ID, '_pp_is_guest', true ) === 1;
+		$page_url = (string) get_post_meta( $post->ID, '_proopin_page_url', true );
+		$is_guest = (int) get_post_meta( $post->ID, '_proopin_is_guest', true ) === 1;
 		$author   = $is_guest
-			? ( (string) get_post_meta( $post->ID, '_pp_guest_name', true ) ?: __( 'Guest', 'proofing-pins' ) )
+			? ( (string) get_post_meta( $post->ID, '_proopin_guest_name', true ) ?: __( 'Guest', 'proofing-pins' ) )
 			: ( get_userdata( $post->post_author )->display_name ?? __( 'Unknown', 'proofing-pins' ) );
 
 		$facts = $extra;
@@ -327,7 +329,7 @@ class Teams {
 	 * compressed image still exceeds the budget.
 	 */
 	private function screenshot_data_url( int $post_id ): string {
-		$attach_id = (int) get_post_meta( $post_id, '_pp_screenshot_id', true );
+		$attach_id = (int) get_post_meta( $post_id, '_proopin_screenshot_id', true );
 		if ( ! $attach_id ) { return ''; }
 		$path = get_attached_file( $attach_id );
 		if ( ! $path || ! file_exists( $path ) ) { return ''; }
@@ -337,7 +339,7 @@ class Teams {
 		$editor->resize( 600, null, false );
 		$editor->set_quality( 65 );
 
-		$tmp = wp_tempnam( 'pp-card-' );
+		$tmp = wp_tempnam( 'proopin-card-' );
 		if ( ! $tmp ) { return ''; }
 		$saved = $editor->save( $tmp, 'image/jpeg' );
 		if ( is_wp_error( $saved ) || empty( $saved['path'] ) ) {
