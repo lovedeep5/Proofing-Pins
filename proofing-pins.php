@@ -3,7 +3,7 @@
  * Plugin Name:       Proofing Pins
  * Plugin URI:        https://github.com/lovedeep5/Proofing-Pins
  * Description:       Pin-point proofing comments on the frontend with screenshots, managed from a clean admin dashboard. Optional AI suggestions and 1-click Apply to Elementor widgets.
- * Version:           0.1.2
+ * Version:           0.1.3
  * Requires at least: 6.3
  * Tested up to:      7.0
  * Requires PHP:      7.4
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PROOFING_PINS_VERSION', '0.1.2' );
+define( 'PROOFING_PINS_VERSION', '0.1.3' );
 define( 'PROOFING_PINS_PLUGIN_FILE', __FILE__ );
 define( 'PROOFING_PINS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PROOFING_PINS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

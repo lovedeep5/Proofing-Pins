@@ -62,76 +62,108 @@ class Admin {
 		);
 		add_submenu_page(
 			'proofing-pins',
-			__( 'AI Integration', 'proofing-pins' ),
-			__( 'AI Integration', 'proofing-pins' ),
+			__( 'Integrations', 'proofing-pins' ),
+			__( 'Integrations', 'proofing-pins' ),
 			Capabilities::MANAGE,
-			'proofing-pins-ai',
-			[ $this, 'render_ai' ]
-		);
-		add_submenu_page(
-			'proofing-pins',
-			__( 'Teams Integration', 'proofing-pins' ),
-			__( 'Teams Integration', 'proofing-pins' ),
-			Capabilities::MANAGE,
-			'proofing-pins-teams',
-			[ $this, 'render_teams' ]
+			'proofing-pins-integrations',
+			[ $this, 'render_integrations' ]
 		);
 	}
 
-	public function render_ai(): void {
+	/**
+	 * Single Integrations page hosting three tabs: AI, Microsoft Teams, Webhook.
+	 * Each tab keeps its own form/nonce; we dispatch save + data prep based on
+	 * the active tab, then include the tab container template.
+	 */
+	public function render_integrations(): void {
 		if ( ! current_user_can( Capabilities::MANAGE ) ) {
 			wp_die( esc_html__( 'Insufficient permissions.', 'proofing-pins' ) );
 		}
+		$tab   = $this->current_integrations_tab();
 		$saved = false;
-		if ( isset( $_POST['proopin_ai_nonce'] )
-			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_ai_nonce'] ) ), 'proopin_ai_save' ) ) {
-			AI::instance()->save_settings( [
-				'enabled'         => ! empty( $_POST['enabled'] ),
-				'auto_suggest'    => ! empty( $_POST['auto_suggest'] ),
-				'provider'        => isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '',
-				'model'           => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '',
-				// API key: only sanitize control characters/whitespace; preserve the token as typed.
-				'api_key'         => isset( $_POST['api_key'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) ) : '',
-				'request_timeout' => isset( $_POST['request_timeout'] ) ? (int) $_POST['request_timeout'] : 30,
-			] );
-			$saved = true;
+
+		if ( $tab === 'ai' ) {
+			$saved      = $this->process_ai_form();
+			$settings   = AI::instance()->get_settings();
+			$masked_key = AI::instance()->masked_key();
+			$catalog    = AI::model_catalog();
+		} elseif ( $tab === 'teams' ) {
+			$saved          = $this->process_teams_form();
+			$settings       = Teams::instance()->get_settings();
+			$masked_webhook = Teams::instance()->masked_webhook();
+		} elseif ( $tab === 'webhook' ) {
+			$saved          = $this->process_webhook_form();
+			$settings       = Webhook::instance()->get_settings();
+			$masked_webhook = Webhook::instance()->masked_webhook();
 		}
-		$settings   = AI::instance()->get_settings();
-		$masked_key = AI::instance()->masked_key();
-		$catalog    = AI::model_catalog();
-		include PROOFING_PINS_PLUGIN_DIR . 'templates/admin-ai.php';
+
+		include PROOFING_PINS_PLUGIN_DIR . 'templates/admin-integrations.php';
 	}
 
-	public function render_teams(): void {
-		if ( ! current_user_can( Capabilities::MANAGE ) ) {
-			wp_die( esc_html__( 'Insufficient permissions.', 'proofing-pins' ) );
-		}
-		$saved = false;
-		if ( isset( $_POST['proopin_teams_nonce'] )
-			&& wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_teams_nonce'] ) ), 'proopin_teams_save' ) ) {
-			$events = [];
-			if ( isset( $_POST['events'] ) && is_array( $_POST['events'] ) ) {
-				$raw_events = map_deep( wp_unslash( $_POST['events'] ), 'sanitize_text_field' );
-				foreach ( $raw_events as $k => $v ) {
-					$events[ sanitize_key( $k ) ] = ! empty( $v );
-				}
+	private function current_integrations_tab(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab routing display param, value validated against allowlist below.
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'ai';
+		return in_array( $tab, [ 'ai', 'teams', 'webhook' ], true ) ? $tab : 'ai';
+	}
+
+	private function process_ai_form(): bool {
+		if ( ! isset( $_POST['proopin_ai_nonce'] ) ) { return false; }
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_ai_nonce'] ) ), 'proopin_ai_save' ) ) { return false; }
+		AI::instance()->save_settings( [
+			'enabled'         => ! empty( $_POST['enabled'] ),
+			'auto_suggest'    => ! empty( $_POST['auto_suggest'] ),
+			'provider'        => isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '',
+			'model'           => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '',
+			// API key: only sanitize control characters/whitespace; preserve the token as typed.
+			'api_key'         => isset( $_POST['api_key'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) ) : '',
+			'request_timeout' => isset( $_POST['request_timeout'] ) ? (int) $_POST['request_timeout'] : 30,
+		] );
+		return true;
+	}
+
+	private function process_teams_form(): bool {
+		if ( ! isset( $_POST['proopin_teams_nonce'] ) ) { return false; }
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_teams_nonce'] ) ), 'proopin_teams_save' ) ) { return false; }
+		$events = [];
+		if ( isset( $_POST['events'] ) && is_array( $_POST['events'] ) ) {
+			$raw_events = map_deep( wp_unslash( $_POST['events'] ), 'sanitize_text_field' );
+			foreach ( $raw_events as $k => $v ) {
+				$events[ sanitize_key( $k ) ] = ! empty( $v );
 			}
-			Teams::instance()->save_settings( [
-				'enabled'       => ! empty( $_POST['enabled'] ),
-				// Webhook URL contains a SAS-style signature. sanitize_text_field() would
-				// strip %XX sequences (e.g. sp=%2Ftriggers%2Fmanual%2Frun) and break the
-				// signature, so we use esc_url_raw instead — it preserves URL-encoded
-				// characters while stripping CRLF (%0D/%0A) injection attempts. Final
-				// scheme/host validation happens inside Teams::save_settings().
-				'webhook_url'   => isset( $_POST['webhook_url'] ) ? esc_url_raw( wp_unslash( $_POST['webhook_url'] ) ) : '',
-				'clear_webhook' => ! empty( $_POST['clear_webhook'] ),
-				'events'        => $events,
-			] );
-			$saved = true;
 		}
-		$settings       = Teams::instance()->get_settings();
-		$masked_webhook = Teams::instance()->masked_webhook();
-		include PROOFING_PINS_PLUGIN_DIR . 'templates/admin-teams.php';
+		Teams::instance()->save_settings( [
+			'enabled'       => ! empty( $_POST['enabled'] ),
+			// Webhook URL contains a SAS-style signature. sanitize_text_field() would
+			// strip %XX sequences (e.g. sp=%2Ftriggers%2Fmanual%2Frun) and break the
+			// signature, so we use esc_url_raw — it preserves URL-encoded characters
+			// while stripping CRLF (%0D/%0A). Final scheme/host validation happens
+			// inside Teams::save_settings().
+			'webhook_url'   => isset( $_POST['webhook_url'] ) ? esc_url_raw( wp_unslash( $_POST['webhook_url'] ) ) : '',
+			'clear_webhook' => ! empty( $_POST['clear_webhook'] ),
+			'events'        => $events,
+		] );
+		return true;
+	}
+
+	private function process_webhook_form(): bool {
+		if ( ! isset( $_POST['proopin_webhook_nonce'] ) ) { return false; }
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['proopin_webhook_nonce'] ) ), 'proopin_webhook_save' ) ) { return false; }
+		$events = [];
+		if ( isset( $_POST['events'] ) && is_array( $_POST['events'] ) ) {
+			$raw_events = map_deep( wp_unslash( $_POST['events'] ), 'sanitize_text_field' );
+			foreach ( $raw_events as $k => $v ) {
+				$events[ sanitize_key( $k ) ] = ! empty( $v );
+			}
+		}
+		Webhook::instance()->save_settings( [
+			'enabled'       => ! empty( $_POST['enabled'] ),
+			// esc_url_raw mirrors the Teams handler — webhook receivers may carry
+			// signed query parameters with %XX that sanitize_text_field would strip.
+			'webhook_url'   => isset( $_POST['webhook_url'] ) ? esc_url_raw( wp_unslash( $_POST['webhook_url'] ) ) : '',
+			'clear_webhook' => ! empty( $_POST['clear_webhook'] ),
+			'events'        => $events,
+		] );
+		return true;
 	}
 
 	public function enqueue( $hook ): void {
@@ -151,28 +183,40 @@ class Admin {
 			'nonce'   => wp_create_nonce( 'wp_rest' ),
 			'siteUrl' => home_url( '/' ),
 		] );
-		if ( false !== strpos( $hook, 'proofing-pins-ai' ) ) {
-			$ai_settings = AI::instance()->get_settings();
-			wp_add_inline_script(
-				'proopin-admin',
-				'var PROOPIN_AI_DATA=' . wp_json_encode( [
-					'catalog'  => AI::model_catalog(),
-					'provider' => $ai_settings['provider'] ?? '',
-					'model'    => $ai_settings['model'] ?? '',
-					'restUrl'  => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
-					'nonce'    => wp_create_nonce( 'wp_rest' ),
-				] ) . ';' . $this->ai_page_js(),
-				'after'
-			);
-		} elseif ( false !== strpos( $hook, 'proofing-pins-teams' ) ) {
-			wp_add_inline_script(
-				'proopin-admin',
-				'var PROOPIN_TEAMS_DATA=' . wp_json_encode( [
-					'restUrl' => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
-					'nonce'   => wp_create_nonce( 'wp_rest' ),
-				] ) . ';' . $this->teams_page_js(),
-				'after'
-			);
+		if ( false !== strpos( $hook, 'proofing-pins-integrations' ) ) {
+			$tab = $this->current_integrations_tab();
+			if ( $tab === 'ai' ) {
+				$ai_settings = AI::instance()->get_settings();
+				wp_add_inline_script(
+					'proopin-admin',
+					'var PROOPIN_AI_DATA=' . wp_json_encode( [
+						'catalog'  => AI::model_catalog(),
+						'provider' => $ai_settings['provider'] ?? '',
+						'model'    => $ai_settings['model'] ?? '',
+						'restUrl'  => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
+						'nonce'    => wp_create_nonce( 'wp_rest' ),
+					] ) . ';' . $this->ai_page_js(),
+					'after'
+				);
+			} elseif ( $tab === 'teams' ) {
+				wp_add_inline_script(
+					'proopin-admin',
+					'var PROOPIN_TEAMS_DATA=' . wp_json_encode( [
+						'restUrl' => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
+						'nonce'   => wp_create_nonce( 'wp_rest' ),
+					] ) . ';' . $this->teams_page_js(),
+					'after'
+				);
+			} elseif ( $tab === 'webhook' ) {
+				wp_add_inline_script(
+					'proopin-admin',
+					'var PROOPIN_WEBHOOK_DATA=' . wp_json_encode( [
+						'restUrl' => rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ),
+						'nonce'   => wp_create_nonce( 'wp_rest' ),
+					] ) . ';' . $this->webhook_page_js(),
+					'after'
+				);
+			}
 		} else {
 			wp_add_inline_script( 'proopin-admin', $this->dashboard_page_js(), 'after' );
 		}
@@ -406,6 +450,43 @@ JS;
 		btn.disabled = true;
 		try {
 			const res = await fetch(REST + 'teams/test', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': NONCE },
+				credentials: 'same-origin'
+			});
+			const json = await res.json();
+			if (json.ok) {
+				out.textContent = '✓ ' + (json.message || 'Sent');
+				out.className = 'proopin-ai-test-result ok';
+			} else {
+				out.textContent = '✗ ' + (json.message || 'Failed');
+				out.className = 'proopin-ai-test-result err';
+			}
+		} catch (err) {
+			out.textContent = '✗ ' + err.message;
+			out.className = 'proopin-ai-test-result err';
+		} finally {
+			btn.disabled = false;
+		}
+	});
+})();
+JS;
+	}
+
+	private function webhook_page_js(): string {
+		return <<<'JS'
+(function(){
+	const REST  = PROOPIN_WEBHOOK_DATA.restUrl;
+	const NONCE = PROOPIN_WEBHOOK_DATA.nonce;
+	const btn   = document.getElementById('proopin-webhook-test');
+	const out   = document.getElementById('proopin-webhook-test-result');
+	if (!btn) return;
+	btn.addEventListener('click', async () => {
+		out.textContent = 'Sending…';
+		out.className = 'proopin-ai-test-result';
+		btn.disabled = true;
+		try {
+			const res = await fetch(REST + 'webhook/test', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': NONCE },
 				credentials: 'same-origin'

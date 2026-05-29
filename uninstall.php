@@ -27,6 +27,7 @@ foreach ( $proopin_post_ids as $proopin_post_id ) {
 delete_option( 'proopin_settings' );
 delete_option( 'proopin_ai_settings' );
 delete_option( 'proopin_teams_settings' );
+delete_option( 'proopin_webhook_settings' );
 
 // Clear any pending AI suggestion cron events (one-shot, args=[$pin_id]).
 wp_clear_scheduled_hook( 'proopin_ai_generate_suggestion' );

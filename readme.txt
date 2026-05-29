@@ -4,11 +4,11 @@ Tags: feedback, proofing, comments, client review, elementor
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.2
+Stable tag: 0.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Pin-point client feedback on any page with screenshots. Optional AI suggestions, Microsoft Teams notifications, 1-click Apply for Elementor.
+Pin-point client feedback on any page with screenshots. AI suggestions, Teams, generic webhook, 1-click Apply for Elementor.
 
 == Description ==
 
@@ -29,12 +29,14 @@ https://www.youtube.com/watch?v=8UJX0GmM79k
 * **AI suggestions (optional, BYO key):** bring your own OpenAI, Anthropic, Google Gemini, or OpenRouter API key. Each pin gets a one-paragraph suggestion on what to change.
 * **Elementor-aware Apply button:** when the AI proposes an allowlisted change (heading text, button text, color), a before/after preview appears with an "Apply to Elementor" button. Applies the change to the live page, saves a WordPress revision, one-click revert available.
 * **Microsoft Teams notifications (optional):** post pin activity directly to a Teams channel using a Workflow webhook. Pick which events you want — new pins, replies, and per-status transitions (Open / In Progress / Resolved / Archived). Each notification is an Adaptive Card with the comment, author, page, status, and (where small enough) the screenshot. Webhook URL is stored encrypted at rest; one-click "Send test message" verifies the wire.
+* **Generic webhook notifications (optional):** post the same pin activity as plain JSON to any HTTPS endpoint of your choice. Works with Zapier, n8n, Make, Power Automate, IFTTT, or any custom HTTP receiver. Each `pin_created` payload includes the screenshot URL, so downstream tools (image search, OCR, Trello cards, etc.) can attach the visual right away. Same encryption + test-message verification as the Teams integration.
 
 **Data, privacy, and third-party services**
 
 * The plugin does not send any data to third parties by default.
 * The AI feature is **opt-in**. You provide your own API key; requests go directly from your WordPress server to the provider you configure (OpenAI, Anthropic, Google, or OpenRouter). No data is sent to the plugin author. When enabled, each new pin's comment text, captured element HTML, and metadata are sent to the configured provider so it can generate a suggestion — consult your provider's privacy policy.
 * The Microsoft Teams integration is **opt-in**. You provide your own Teams Workflow webhook URL; notifications are posted directly from your WordPress server to that webhook (typically a Microsoft-hosted Azure Logic Apps endpoint). No data is sent to the plugin author. Payloads include the pin comment, author name, page URL, status, and a heavily compressed thumbnail when one fits — see "External Services" below for the exact contract.
+* The Generic Webhook integration is **opt-in**. You provide your own HTTPS endpoint; JSON payloads are posted directly from your WordPress server to that endpoint. The destination is entirely controlled by you; the plugin contacts no specific third-party service for this feature. No data is sent to the plugin author. Payloads include the pin comment, author name, author email (when available), page URL, status, and the screenshot URL — see "External Services" for the exact contract.
 * Screenshots are stored locally in your WordPress uploads folder — never uploaded elsewhere.
 * Guest identities (name + email) are stored in a cookie (`proopin_guest_identity`) for 30 days only on the visitor's own browser.
 * When guest commenting is enabled, the plugin stores a short hash of each guest submitter's IP address (first 16 characters of the MD5 hash) for the sole purpose of rate-limiting abusive submissions. Raw IP addresses are never stored.
@@ -45,7 +47,8 @@ https://www.youtube.com/watch?v=8UJX0GmM79k
 2. Activate the plugin through the Plugins screen in WordPress.
 3. Visit **Proofing → Settings** to configure the floating-button position, brand color, and guest-comments toggle.
 4. (Optional) Visit **Proofing → AI Integration** to enable AI suggestions — enter your provider API key and pick a model.
-5. (Optional) Visit **Proofing → Teams Integration** to enable Microsoft Teams notifications — paste your Workflow webhook URL and pick which events you want to be notified about.
+5. (Optional) Visit **Proofing → Integrations → Microsoft Teams** to enable Teams notifications — paste your Workflow webhook URL and pick which events you want.
+6. (Optional) Visit **Proofing → Integrations → Webhook** to enable generic webhook notifications — paste any HTTPS endpoint URL (Zapier / n8n / Make / Power Automate / IFTTT / custom) and pick which events you want.
 
 == Frequently Asked Questions ==
 
@@ -79,6 +82,12 @@ Encrypted at rest with AES-256-CBC using a key derived from `AUTH_KEY`. The stor
 
 == Changelog ==
 
+= 0.1.3 =
+* New: Generic Webhook integration. Posts the same pin events as the Teams integration, but as plain JSON to any HTTPS endpoint (Zapier, n8n, Make, Power Automate, IFTTT, or custom receivers). `pin_created` payloads include the screenshot URL. Opt-in, off by default; URL stored encrypted at rest; per-event toggles; one-click "Send test message".
+* Change: AI Integration and Teams Integration are no longer separate submenus. They now live as tabs under a single **Proofing → Integrations** page, alongside the new Webhook tab. Existing settings carry over untouched.
+* New: "Report a bug" link in the dashboard header (opens the plugin's GitHub Issues tracker in a new tab) so users can flag problems without leaving wp-admin.
+* Polish: refreshed the admin UI on the Integrations and Settings screens — modern underline tabs, more generous spacing under the tab nav, refined card shadows, modern form-field styling with proper focus rings, and a lifted page heading. No HTML structure changes; existing layouts unchanged.
+
 = 0.1.2 =
 * New: tutorial video link in the admin dashboard header (opens on YouTube in a new tab) so first-time users can find the walkthrough without leaving wp-admin.
 * New: tutorial video auto-embedded on the WordPress.org plugin listing page.
@@ -101,6 +110,9 @@ Encrypted at rest with AES-256-CBC using a key derived from `AUTH_KEY`. The stor
 * Elementor-aware suggestions and 1-click Apply / Revert for allowlisted widget settings.
 
 == Upgrade Notice ==
+
+= 0.1.3 =
+Adds a Generic Webhook integration (Zapier / n8n / Make / Power Automate / IFTTT / custom HTTPS endpoint). AI and Teams settings have moved into a unified Integrations page; saved values carry over. No data migration required.
 
 = 0.1.2 =
 Adds an in-dashboard "Watch tutorial" link and embeds the video on the WP.org listing page. No code or data changes affecting existing pins.
@@ -172,6 +184,16 @@ The destination URL is provided entirely by you. The plugin only posts to whiche
 * Service: https://www.microsoft.com/en-us/microsoft-teams/group-chat-software
 * Terms of Service: https://www.microsoft.com/en-us/servicesagreement/
 * Privacy Statement: https://privacy.microsoft.com/en-us/privacystatement
+
+= Generic Webhook (user-configured endpoint) =
+
+Used for: posting pin activity (new pin, new reply, status change) as plain JSON to any HTTPS endpoint of your choice. Common destinations are Zapier, n8n, Make, Power Automate, IFTTT, or your own custom webhook receiver — but the plugin does not contact any specific service. The destination is whatever URL you save.
+
+Data sent: pin id, pin comment, pin status, pin status label, page URL, page title, screenshot URL (or empty string when none), pin admin URL, author name + email + guest flag, created-at timestamp; reply id + content + author for reply events; old/new status keys + labels for status-change events; site URL + name + event timestamp on every payload.
+
+Sent when: the Generic Webhook integration is enabled, a webhook URL is configured, and the corresponding event happens on a pin. Also sent on demand when the admin clicks "Send test message" on the Webhook settings screen.
+
+The destination URL is provided entirely by you and is stored encrypted at rest. The plugin enforces `https://` and validates the URL format before saving. No data is sent to the plugin author.
 
 == Third-Party Libraries ==
 

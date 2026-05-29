@@ -1,11 +1,65 @@
 .proopin-admin { --proopin-brand: #2271b1; --proopin-bg: #f8fafc; --proopin-card: #fff; --proopin-border: #e5e7eb; --proopin-text: #111827; --proopin-muted: #6b7280; }
+
+/* Page-level heading polish (Integrations, Settings, AI, Teams, Webhook) */
+.proopin-admin > h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.015em; margin: 12px 0 6px; color: var(--proopin-text); }
 .proopin-admin .proopin-admin-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
 .proopin-admin .proopin-admin-header h1 { font-size: 24px; margin: 10px 0 4px; }
 .proopin-admin .proopin-admin-subtitle { color: var(--proopin-muted); font-size: 13px; margin: 0; }
-.proopin-admin .proopin-tutorial-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #fff; border: 1px solid var(--proopin-border); border-radius: 8px; text-decoration: none; color: var(--proopin-text); font-size: 13px; font-weight: 500; margin-top: 12px; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.proopin-admin .proopin-admin-header-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.proopin-admin .proopin-tutorial-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #fff; border: 1px solid var(--proopin-border); border-radius: 8px; text-decoration: none; color: var(--proopin-text); font-size: 13px; font-weight: 500; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
 .proopin-admin .proopin-tutorial-link:hover { background: var(--proopin-brand); color: #fff; border-color: var(--proopin-brand); }
 .proopin-admin .proopin-tutorial-link:focus { outline: 2px solid var(--proopin-brand); outline-offset: 2px; }
 .proopin-admin .proopin-tutorial-link svg { flex-shrink: 0; }
+
+/* Integrations page — premium underline tabs */
+.proopin-admin .nav-tab-wrapper.proopin-tabs {
+	border-bottom: 1px solid var(--proopin-border);
+	margin: 24px 0 0;
+	padding: 0 4px;
+	background: transparent;
+	display: flex;
+	gap: 4px;
+}
+.proopin-admin .nav-tab-wrapper.proopin-tabs .nav-tab {
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	margin: 0;
+	padding: 14px 20px;
+	color: var(--proopin-muted);
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1;
+	border-radius: 0;
+	box-shadow: none;
+	transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.proopin-admin .nav-tab-wrapper.proopin-tabs .nav-tab:hover {
+	color: var(--proopin-text);
+	background: rgba(34, 113, 177, 0.04);
+}
+.proopin-admin .nav-tab-wrapper.proopin-tabs .nav-tab:focus {
+	box-shadow: none;
+	outline: 2px solid var(--proopin-brand);
+	outline-offset: -4px;
+}
+.proopin-admin .nav-tab-wrapper.proopin-tabs .nav-tab.nav-tab-active {
+	color: var(--proopin-brand);
+	border-bottom-color: var(--proopin-brand);
+	background: transparent;
+	font-weight: 600;
+}
+
+/* Generous spacing under the tab nav so the description has room to breathe */
+.proopin-admin .proopin-tab-body { padding-top: 32px; background: transparent; }
+.proopin-admin .proopin-tab-body > .proopin-admin-subtitle:first-child,
+.proopin-admin .proopin-tab-body > p.proopin-admin-subtitle:first-of-type {
+	margin: 0 0 28px 0;
+	font-size: 14px;
+	line-height: 1.65;
+	color: var(--proopin-muted);
+	max-width: 760px;
+}
 .proopin-admin .proopin-filters { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: #fff; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--proopin-border); margin-bottom: 16px; }
 .proopin-admin .proopin-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .proopin-admin .proopin-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: #f3f4f6; color: var(--proopin-text); font-size: 13px; text-decoration: none; border: 1px solid transparent; transition: all 0.12s ease; }
@@ -150,12 +204,120 @@
 .proopin-admin .proopin-ai-notes { font-size: 12px; color: var(--proopin-muted); margin: 6px 0 0; font-style: italic; }
 .proopin-admin .proopin-ai-model { font-size: 11px; color: #9ca3af; margin-top: 8px; }
 
-/* AI settings page */
-.proopin-admin .proopin-ai-card { background: #fff; border: 1px solid var(--proopin-border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
-.proopin-admin .proopin-ai-card h2 { margin: 0 0 12px; font-size: 15px; }
-.proopin-admin .proopin-ai-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 14px; cursor: pointer; }
+/* Integrations settings — premium cards */
+.proopin-admin .proopin-ai-card {
+	background: #fff;
+	border: 1px solid var(--proopin-border);
+	border-radius: 12px;
+	padding: 24px 28px;
+	margin-bottom: 18px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 1px 3px rgba(15, 23, 42, 0.02);
+	transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.proopin-admin .proopin-ai-card:hover {
+	box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.proopin-admin .proopin-ai-card h2 {
+	margin: 0 0 18px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--proopin-text);
+	letter-spacing: -0.01em;
+}
+.proopin-admin .proopin-ai-card h3 {
+	margin: 18px 0 8px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--proopin-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+/* Toggle rows (Enable checkbox + event checkboxes) */
+.proopin-admin .proopin-ai-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	padding: 8px 0;
+	font-size: 14px;
+	color: var(--proopin-text);
+	cursor: pointer;
+}
+.proopin-admin .proopin-ai-toggle + .proopin-ai-toggle { margin-top: 2px; }
 .proopin-admin .proopin-ai-toggle input { margin: 0; }
-.proopin-admin .proopin-ai-existing { color: var(--proopin-muted); font-family: ui-monospace, monospace; font-size: 12px; margin-left: 10px; }
-.proopin-admin .proopin-ai-test-result { margin-left: 10px; font-size: 13px; }
+.proopin-admin .proopin-ai-toggle span { line-height: 1.4; }
+
+/* Form-table fields inside cards: modern, focused */
+.proopin-admin .proopin-ai-card .form-table { margin: 0; }
+.proopin-admin .proopin-ai-card .form-table th {
+	padding: 14px 20px 14px 0;
+	font-weight: 500;
+	font-size: 13px;
+	color: var(--proopin-text);
+	width: 200px;
+	vertical-align: top;
+}
+.proopin-admin .proopin-ai-card .form-table td {
+	padding: 12px 0;
+	vertical-align: top;
+}
+.proopin-admin .proopin-ai-card .form-table input[type="text"],
+.proopin-admin .proopin-ai-card .form-table input[type="password"],
+.proopin-admin .proopin-ai-card .form-table input[type="url"],
+.proopin-admin .proopin-ai-card .form-table input[type="number"],
+.proopin-admin .proopin-ai-card .form-table select {
+	border-radius: 7px;
+	border: 1px solid var(--proopin-border);
+	padding: 8px 12px;
+	font-size: 13px;
+	background: #fff;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.proopin-admin .proopin-ai-card .form-table input[type="text"]:focus,
+.proopin-admin .proopin-ai-card .form-table input[type="password"]:focus,
+.proopin-admin .proopin-ai-card .form-table input[type="url"]:focus,
+.proopin-admin .proopin-ai-card .form-table input[type="number"]:focus,
+.proopin-admin .proopin-ai-card .form-table select:focus {
+	border-color: var(--proopin-brand);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.12);
+	outline: none;
+}
+.proopin-admin .proopin-ai-card .form-table .description {
+	margin-top: 10px;
+	font-size: 12.5px;
+	line-height: 1.55;
+	color: var(--proopin-muted);
+	max-width: 720px;
+}
+
+/* "Send test message" button + result */
+.proopin-admin .proopin-ai-card .button { margin-top: 12px; border-radius: 7px; }
+.proopin-admin .proopin-ai-existing {
+	display: inline-block;
+	margin-left: 10px;
+	padding: 3px 8px;
+	background: #f1f5f9;
+	border-radius: 5px;
+	color: var(--proopin-muted);
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 11px;
+}
+.proopin-admin .proopin-ai-test-result { margin-left: 10px; font-size: 13px; vertical-align: middle; }
 .proopin-admin .proopin-ai-test-result.ok  { color: #166534; }
 .proopin-admin .proopin-ai-test-result.err { color: #b91c1c; }
+
+/* Save button area — separate from the cards above */
+.proopin-admin .proopin-ai-form > .submit { padding: 20px 0 4px; margin: 0; }
+.proopin-admin .proopin-ai-form > .submit .button-primary { border-radius: 7px; padding: 6px 18px; font-weight: 500; }
+
+/* "Last delivery" panel — visual subtlety so it doesn't compete with active settings */
+.proopin-admin .proopin-ai-card pre {
+	background: #f8fafc !important;
+	border: 1px solid var(--proopin-border);
+	border-radius: 6px;
+	padding: 12px 14px !important;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #475569;
+}

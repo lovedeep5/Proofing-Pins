@@ -88,6 +88,20 @@ class Rest_API {
 			'callback'            => [ $this, 'teams_test' ],
 			'permission_callback' => [ $this, 'can_manage' ],
 		] );
+
+		register_rest_route( $ns, '/webhook/test', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'webhook_test' ],
+			'permission_callback' => [ $this, 'can_manage' ],
+		] );
+	}
+
+	public function webhook_test( \WP_REST_Request $req ): \WP_REST_Response {
+		$result = Webhook::instance()->send_test();
+		return rest_ensure_response( [
+			'ok'      => ! empty( $result['ok'] ),
+			'message' => (string) ( $result['message'] ?? '' ),
+		] );
 	}
 
 	public function teams_test( \WP_REST_Request $req ): \WP_REST_Response {

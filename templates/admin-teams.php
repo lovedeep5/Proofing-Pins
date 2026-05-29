@@ -14,11 +14,9 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 	$grouped[ $event['group'] ][] = $event;
 }
 ?>
-<div class="wrap proopin-admin">
-	<h1><?php esc_html_e( 'Teams Integration', 'proofing-pins' ); ?></h1>
-	<p class="proopin-admin-subtitle">
-		<?php esc_html_e( 'Post pin activity to a Microsoft Teams channel via a Workflow webhook. Pick which events you want to be notified about.', 'proofing-pins' ); ?>
-	</p>
+<p class="proopin-admin-subtitle">
+	<?php esc_html_e( 'Post pin activity to a Microsoft Teams channel via a Workflow webhook. Pick which events you want to be notified about.', 'proofing-pins' ); ?>
+</p>
 
 	<?php if ( ! empty( $saved ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'proofing-pins' ); ?></p></div>
@@ -110,4 +108,3 @@ foreach ( \ProofingPins\Teams::event_catalog() as $event ) {
 
 		<?php submit_button( __( 'Save Teams settings', 'proofing-pins' ) ); ?>
 	</form>
-</div>

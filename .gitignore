@@ -1,0 +1,29 @@
+# Local-only docs (developer reference, not shipped)
+PLUGIN_GUIDELINES.md
+
+# WP build artifacts
+proofing-pins.zip
+
+# Standalone screenshot copies in repo root (the canonical copies live in assets-source/)
+/screenshot-*.png
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# PHP dev tooling
+/vendor/
+/.phpcs-cache
+/phpcs.xml
+/phpunit.xml
+
+# Composer/npm logs
+composer.lock
+package-lock.json
+npm-debug.log*

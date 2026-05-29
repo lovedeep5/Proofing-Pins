@@ -67,10 +67,16 @@ $can_manage = current_user_can( \ProofingPins\Capabilities::MANAGE );
 			<h1><?php esc_html_e( 'Proofing Pins', 'proofing-pins' ); ?></h1>
 			<p class="proopin-admin-subtitle"><?php esc_html_e( 'All pinpoint comments from reviewers across your site.', 'proofing-pins' ); ?></p>
 		</div>
-		<a class="proopin-tutorial-link" href="https://www.youtube.com/watch?v=8UJX0GmM79k" target="_blank" rel="noopener">
-			<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-			<?php esc_html_e( 'Watch tutorial', 'proofing-pins' ); ?>
-		</a>
+		<div class="proopin-admin-header-actions">
+			<a class="proopin-tutorial-link" href="https://www.youtube.com/watch?v=8UJX0GmM79k" target="_blank" rel="noopener">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+				<?php esc_html_e( 'Watch tutorial', 'proofing-pins' ); ?>
+			</a>
+			<a class="proopin-tutorial-link" href="https://github.com/lovedeep5/Proofing-Pins/issues" target="_blank" rel="noopener">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+				<?php esc_html_e( 'Report a bug', 'proofing-pins' ); ?>
+			</a>
+		</div>
 	</div>
 
 	<?php

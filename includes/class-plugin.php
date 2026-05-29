@@ -22,6 +22,7 @@ class Plugin {
 		( new Frontend() )->register();
 		AI::instance()->register();
 		Teams::instance()->register();
+		Webhook::instance()->register();
 		if ( is_admin() ) {
 			( new Admin() )->register();
 		}

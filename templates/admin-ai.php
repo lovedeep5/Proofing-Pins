@@ -9,11 +9,9 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
-<div class="wrap proopin-admin">
-	<h1><?php esc_html_e( 'AI Integration', 'proofing-pins' ); ?></h1>
-	<p class="proopin-admin-subtitle">
-		<?php esc_html_e( 'Let an AI analyze each pin comment and suggest what to change. Bring your own API key from OpenAI, Anthropic, Google, or OpenRouter.', 'proofing-pins' ); ?>
-	</p>
+<p class="proopin-admin-subtitle">
+	<?php esc_html_e( 'Let an AI analyze each pin comment and suggest what to change. Bring your own API key from OpenAI, Anthropic, Google, or OpenRouter.', 'proofing-pins' ); ?>
+</p>
 
 	<?php if ( ! empty( $saved ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'proofing-pins' ); ?></p></div>
@@ -87,4 +85,3 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 		<?php submit_button( __( 'Save AI settings', 'proofing-pins' ) ); ?>
 	</form>
-</div>
