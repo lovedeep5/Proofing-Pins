@@ -4,8 +4,8 @@ namespace ProofingPins;
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class AI {
-	public const OPTION_KEY = 'pp_ai_settings';
-	public const CRON_HOOK  = 'pp_ai_generate_suggestion';
+	public const OPTION_KEY = 'proopin_ai_settings';
+	public const CRON_HOOK  = 'proopin_ai_generate_suggestion';
 
 	private static ?AI $instance = null;
 
@@ -66,7 +66,7 @@ class AI {
 	// ---------- encryption ----------
 	private function key(): string {
 		$seed = defined( 'AUTH_KEY' ) && AUTH_KEY ? AUTH_KEY : wp_salt( 'auth' );
-		return hash( 'sha256', 'pp-ai|' . $seed, true );
+		return hash( 'sha256', 'proopin-ai|' . $seed, true );
 	}
 
 	private function encrypt( string $plain ): string {
@@ -133,7 +133,7 @@ class AI {
 	public function on_pin_created( int $pin_id ): void {
 		$s = $this->get_settings();
 		if ( empty( $s['enabled'] ) || empty( $s['auto_suggest'] ) ) { return; }
-		update_post_meta( $pin_id, '_pp_ai_status', 'queued' );
+		update_post_meta( $pin_id, '_proopin_ai_status', 'queued' );
 		if ( ! wp_next_scheduled( self::CRON_HOOK, [ $pin_id ] ) ) {
 			wp_schedule_single_event( time() + 1, self::CRON_HOOK, [ $pin_id ] );
 		}
@@ -148,7 +148,7 @@ class AI {
 	// ---------- main generation path ----------
 	public function generate_for_pin( int $pin_id ) {
 		$post = get_post( $pin_id );
-		if ( ! $post || $post->post_type !== PP_POST_TYPE ) {
+		if ( ! $post || $post->post_type !== PROOFING_PINS_POST_TYPE ) {
 			return new \WP_Error( 'not_found', __( 'Pin not found.', 'proofing-pins' ) );
 		}
 		$s = $this->get_settings();
@@ -157,42 +157,42 @@ class AI {
 		}
 		$key = $this->decrypt( $s['api_key_enc'] );
 		if ( ! $key ) {
-			update_post_meta( $pin_id, '_pp_ai_status', 'error' );
-			update_post_meta( $pin_id, '_pp_ai_error', 'no_api_key' );
+			update_post_meta( $pin_id, '_proopin_ai_status', 'error' );
+			update_post_meta( $pin_id, '_proopin_ai_error', 'no_api_key' );
 			return new \WP_Error( 'no_api_key', __( 'No API key configured.', 'proofing-pins' ) );
 		}
 
-		update_post_meta( $pin_id, '_pp_ai_status', 'running' );
+		update_post_meta( $pin_id, '_proopin_ai_status', 'running' );
 
 		$prompt  = $this->build_prompt( $post );
 		$response = $this->call_provider( $s['provider'], $s['model'], $key, $prompt, (int) $s['request_timeout'] );
 
 		if ( is_wp_error( $response ) ) {
-			update_post_meta( $pin_id, '_pp_ai_status', 'error' );
-			update_post_meta( $pin_id, '_pp_ai_error', $response->get_error_message() );
+			update_post_meta( $pin_id, '_proopin_ai_status', 'error' );
+			update_post_meta( $pin_id, '_proopin_ai_error', $response->get_error_message() );
 			return $response;
 		}
 
 		$parsed = $this->parse_response( $response );
 
-		update_post_meta( $pin_id, '_pp_ai_status', 'ready' );
-		update_post_meta( $pin_id, '_pp_ai_suggestion', $parsed );
-		update_post_meta( $pin_id, '_pp_ai_suggestion_model', $s['provider'] . '/' . $s['model'] );
-		update_post_meta( $pin_id, '_pp_ai_suggestion_created_at', current_time( 'mysql', true ) );
-		delete_post_meta( $pin_id, '_pp_ai_error' );
+		update_post_meta( $pin_id, '_proopin_ai_status', 'ready' );
+		update_post_meta( $pin_id, '_proopin_ai_suggestion', $parsed );
+		update_post_meta( $pin_id, '_proopin_ai_suggestion_model', $s['provider'] . '/' . $s['model'] );
+		update_post_meta( $pin_id, '_proopin_ai_suggestion_created_at', current_time( 'mysql', true ) );
+		delete_post_meta( $pin_id, '_proopin_ai_error' );
 
 		// Persist change_op separately for the Apply UI, only if the proposed op
 		// matches our allowlist AND matches the stored widget for this pin.
-		$pin_widget_type = (string) get_post_meta( $pin_id, '_pp_elementor_widget_type', true );
-		$pin_widget_id   = (string) get_post_meta( $pin_id, '_pp_elementor_widget_id', true );
-		delete_post_meta( $pin_id, '_pp_ai_change_op' );
+		$pin_widget_type = (string) get_post_meta( $pin_id, '_proopin_elementor_widget_type', true );
+		$pin_widget_id   = (string) get_post_meta( $pin_id, '_proopin_elementor_widget_id', true );
+		delete_post_meta( $pin_id, '_proopin_ai_change_op' );
 		if ( ! empty( $parsed['change_op'] ) && is_array( $parsed['change_op'] ) && $pin_widget_type && $pin_widget_id ) {
 			$op = $parsed['change_op'];
 			if ( ( $op['op'] ?? '' ) === 'update_widget_setting'
 				&& ( $op['widget_type'] ?? '' ) === $pin_widget_type
 				&& ( $op['widget_id'] ?? '' ) === $pin_widget_id
 				&& Elementor_Writer::is_allowed( $pin_widget_type, (string) ( $op['setting_key'] ?? '' ) ) ) {
-				update_post_meta( $pin_id, '_pp_ai_change_op', [
+				update_post_meta( $pin_id, '_proopin_ai_change_op', [
 					'op'           => 'update_widget_setting',
 					'widget_type'  => $pin_widget_type,
 					'widget_id'    => $pin_widget_id,
@@ -213,14 +213,14 @@ class AI {
 	// ---------- prompt ----------
 	private function build_prompt( \WP_Post $post ): array {
 		$comment    = $post->post_content;
-		$page_url   = (string) get_post_meta( $post->ID, '_pp_page_url', true );
-		$page_ttl   = (string) get_post_meta( $post->ID, '_pp_page_title', true );
-		$selector   = (string) get_post_meta( $post->ID, '_pp_anchor_selector', true ) ?: (string) get_post_meta( $post->ID, '_pp_element_selector', true );
-		$elem_html  = (string) get_post_meta( $post->ID, '_pp_element_html', true );
-		$elem_tag   = (string) get_post_meta( $post->ID, '_pp_element_tag', true );
-		$viewport   = (int) get_post_meta( $post->ID, '_pp_viewport_w', true ) . '×' . (int) get_post_meta( $post->ID, '_pp_viewport_h', true );
-		$widget_type= (string) get_post_meta( $post->ID, '_pp_elementor_widget_type', true );
-		$widget_id  = (string) get_post_meta( $post->ID, '_pp_elementor_widget_id', true );
+		$page_url   = (string) get_post_meta( $post->ID, '_proopin_page_url', true );
+		$page_ttl   = (string) get_post_meta( $post->ID, '_proopin_page_title', true );
+		$selector   = (string) get_post_meta( $post->ID, '_proopin_anchor_selector', true );
+		$elem_html  = (string) get_post_meta( $post->ID, '_proopin_element_html', true );
+		$elem_tag   = (string) get_post_meta( $post->ID, '_proopin_element_tag', true );
+		$viewport   = (int) get_post_meta( $post->ID, '_proopin_viewport_w', true ) . '×' . (int) get_post_meta( $post->ID, '_proopin_viewport_h', true );
+		$widget_type= (string) get_post_meta( $post->ID, '_proopin_elementor_widget_type', true );
+		$widget_id  = (string) get_post_meta( $post->ID, '_proopin_elementor_widget_id', true );
 
 		$elementor_block = '';
 		if ( $widget_type && $widget_id ) {
@@ -298,7 +298,7 @@ class AI {
 			return new \WP_Error( 'no_api_key', 'API key required to list models for this provider.' );
 		}
 
-		$cache_key = 'pp_ai_models_' . $provider . '_' . substr( md5( $api_key . '|v2' ), 0, 12 );
+		$cache_key = 'proopin_ai_models_' . $provider . '_' . substr( md5( $api_key . '|v2' ), 0, 12 );
 		if ( ! $force_refresh ) {
 			$cached = get_transient( $cache_key );
 			if ( is_array( $cached ) && ! empty( $cached ) ) {

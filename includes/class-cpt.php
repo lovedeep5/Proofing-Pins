@@ -4,10 +4,10 @@ namespace ProofingPins;
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class CPT {
-	public const STATUS_OPEN        = 'pp_open';
-	public const STATUS_IN_PROGRESS = 'pp_in_progress';
-	public const STATUS_RESOLVED    = 'pp_resolved';
-	public const STATUS_ARCHIVED    = 'pp_archived';
+	public const STATUS_OPEN        = 'proopin_open';
+	public const STATUS_IN_PROGRESS = 'proopin_in_progress';
+	public const STATUS_RESOLVED    = 'proopin_resolved';
+	public const STATUS_ARCHIVED    = 'proopin_archived';
 
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_post_type' ] );
@@ -15,7 +15,7 @@ class CPT {
 	}
 
 	public function register_post_type(): void {
-		register_post_type( PP_POST_TYPE, [
+		register_post_type( PROOFING_PINS_POST_TYPE, [
 			'labels'              => [
 				'name'          => __( 'Proofing Pins', 'proofing-pins' ),
 				'singular_name' => __( 'Proofing Pin', 'proofing-pins' ),
@@ -25,7 +25,7 @@ class CPT {
 			'show_in_menu'        => false,
 			'show_in_rest'        => false,
 			'supports'            => [ 'title', 'editor', 'author', 'comments' ],
-			'capability_type'     => [ 'pp_pin', 'pp_pins' ],
+			'capability_type'     => [ 'proopin_pin', 'proopin_pins' ],
 			'map_meta_cap'        => true,
 			'has_archive'         => false,
 			'exclude_from_search' => true,

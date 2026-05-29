@@ -55,7 +55,7 @@ class Screenshot {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		$meta = wp_generate_attachment_metadata( $attach_id, $path );
 		wp_update_attachment_metadata( $attach_id, $meta );
-		update_post_meta( $attach_id, '_pp_is_screenshot', 1 );
+		update_post_meta( $attach_id, '_proopin_is_screenshot', 1 );
 		return (int) $attach_id;
 	}
 }

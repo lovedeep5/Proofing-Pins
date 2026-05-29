@@ -12,7 +12,7 @@ class Frontend {
 	private function should_mount(): bool {
 		if ( is_admin() ) { return false; }
 		if ( is_user_logged_in() && current_user_can( Capabilities::CREATE ) ) { return true; }
-		$settings = get_option( 'pp_settings', [] );
+		$settings = get_option( 'proopin_settings', [] );
 		return ! empty( $settings['guest_pins_enabled'] );
 	}
 
@@ -20,33 +20,33 @@ class Frontend {
 		if ( ! $this->should_mount() ) { return; }
 
 		wp_register_script(
-			'pp-html-to-image',
-			PP_PLUGIN_URL . 'assets/js/html-to-image.min.js',
+			'proopin-html-to-image',
+			PROOFING_PINS_PLUGIN_URL . 'assets/js/html-to-image.min.js',
 			array(),
 			'1.11.13',
 			array( 'in_footer' => true, 'strategy' => 'defer' )
 		);
 		wp_enqueue_script(
-			'pp-widget',
-			PP_PLUGIN_URL . 'assets/js/widget.js',
-			array( 'pp-html-to-image' ),
-			PP_VERSION,
+			'proopin-widget',
+			PROOFING_PINS_PLUGIN_URL . 'assets/js/widget.js',
+			array( 'proopin-html-to-image' ),
+			PROOFING_PINS_VERSION,
 			array( 'in_footer' => true, 'strategy' => 'defer' )
 		);
 
 		$user      = wp_get_current_user();
 		$is_guest  = ! is_user_logged_in();
-		$settings  = wp_parse_args( get_option( 'pp_settings', [] ), [
+		$settings  = wp_parse_args( get_option( 'proopin_settings', [] ), [
 			'position'           => 'right',
 			'brand_color'        => '#2271b1',
 			'guest_pins_enabled' => false,
 			'guest_rate_limit'   => 5,
 		] );
 
-		wp_localize_script( 'pp-widget', 'PP_CONFIG', [
-			'restUrl'    => esc_url_raw( rest_url( PP_REST_NAMESPACE . '/' ) ),
+		wp_localize_script( 'proopin-widget', 'PROOPIN_CONFIG', [
+			'restUrl'    => esc_url_raw( rest_url( PROOFING_PINS_REST_NAMESPACE . '/' ) ),
 			'nonce'      => wp_create_nonce( 'wp_rest' ),
-			'pluginUrl'  => PP_PLUGIN_URL,
+			'pluginUrl'  => PROOFING_PINS_PLUGIN_URL,
 			'user'       => [
 				'id'        => $is_guest ? 0 : $user->ID,
 				'name'      => $is_guest ? '' : $user->display_name,
@@ -86,7 +86,7 @@ class Frontend {
 
 	public function print_root(): void {
 		if ( ! $this->should_mount() ) { return; }
-		echo '<div id="pp-root" data-pp-root></div>';
+		echo '<div id="proopin-root" data-proopin-root></div>';
 	}
 
 	private function current_page_path(): string {

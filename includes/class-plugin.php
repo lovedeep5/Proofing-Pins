@@ -21,6 +21,7 @@ class Plugin {
 		( new Rest_API() )->register();
 		( new Frontend() )->register();
 		AI::instance()->register();
+		Teams::instance()->register();
 		if ( is_admin() ) {
 			( new Admin() )->register();
 		}
